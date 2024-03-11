@@ -1,0 +1,139 @@
+public void doGet(HttpServletRequest request,HttpServletResponse response)
+{
+try
+{
+// Container fetching starts
+ServletContext servletContext=request.getServletContext();
+HttpSession httpSession=request.getSession();
+// Container fetching ends
+
+// variable Declaration starts
+String key=null;
+String serviceURL=null;
+String anotherServiceURL=null;
+String path=null;
+String name=null;
+Service mainService=null;
+Class targetClass=null;
+Method subService=null;
+Method setterMethod=null;
+Object instantiationOfClass=null;
+ApplicationDirectory applicationDirectory=null;
+ApplicationScope applicationScope=null;
+SessionScope sessionScope=null;
+RequestScope requestScope=null;
+List<AutoWiredWrapper> list=null;
+Object value=null;
+Class type=null;
+// varaible Declarration ends
+
+
+
+key=request.getPathInfo();
+serviceURL=key.substring(key.indexOf("/",1));
+
+
+if(model.dataStructure.containsKey(key))
+{
+mainService=model.dataStructure.get(key);
+anotherServiceURL=mainService.getPath().substring(key.indexOf("/",1));
+
+
+if(mainService.getIsGetAllowed() && serviceURL.equalsIgnoreCase(anotherServiceURL) )
+{
+targetClass=mainService.getServiceClass();
+subService=mainService.getService();
+instantiationOfClass=targetClass.newInstance();
+
+// implementing AutoWire Feature starts
+list=mainService.getAutoWired();
+
+if(list!=null)
+{
+for(AutoWiredWrapper autoWired: list)
+{
+value=null;
+name=autoWired.getName();
+type=autoWired.getType();
+
+setterMethod=targetClass.getMethod("set"+type.getSimpleName(),type);
+
+value=request.getAttribute(name);
+if(value!=null && type.isInstance(value))
+{
+setterMethod.invoke(instantiationOfClass,value);
+continue;
+}
+value=httpSession.getAttribute(name);
+if(value!=null && type.isInstance(value))
+{
+setterMethod.invoke(instantiationOfClass,value);
+continue;
+}
+value=servletContext.getAttribute(name);
+if(value!=null && type.isInstance(value))
+{
+setterMethod.invoke(instantiationOfClass,value);
+continue;
+}
+setterMethod.invoke(instantiationOfClass,value);
+}
+}
+// implementing AutoWire Feature ends
+
+// here code of injecting things or IOC starts
+
+if(mainService.getInjectApplicationDirectory())
+{
+path=servletContext.getRealPath("/"); //https://stackoverflow.com/questions/12160639/what-does-servletcontext-getrealpath-mean-and-when-should-i-use-it
+applicationDirectory=new ApplicationDirectory(new File(path));
+setterMethod=targetClass.getMethod("setApplicationDirectory",ApplicationDirectory.class);
+setterMethod.invoke(instantiationOfClass,applicationDirectory);
+}
+if(mainService.getInjectApplicationScope())
+{
+applicationScope=new ApplicationScope(servletContext);
+setterMethod=targetClass.getMethod("setApplicationScope",ApplicationScope.class);
+setterMethod.invoke(instantiationOfClass,applicationScope);
+}
+if(mainService.getInjectSessionScope())
+{
+sessionScope=new SessionScope(httpSession);
+setterMethod=targetClass.getMethod("setSessionScope",SessionScope.class);
+setterMethod.invoke(instantiationOfClass,sessionScope);
+}
+if(mainService.getInjectRequestScope())
+{
+requestScope=new RequestScope(request);
+setterMethod=targetClass.getMethod("setRequestScope",RequestScope.class);
+setterMethod.invoke(instantiationOfClass,requestScope);
+}
+// above code of injecting things or IOC ends
+subService.invoke(instantiationOfClass);
+// here forward related code
+if(mainService.getForwardTo()!=null && mainService.getForwardTo().length()>0)
+{
+RequestDispatcher requestDispatcher;
+requestDispatcher=request.getRequestDispatcher(request.getServletPath()+key.substring(0,key.indexOf("/",1))+mainService.getForwardTo());
+requestDispatcher.forward(request,response);
+}
+}
+else
+{
+if(serviceURL.equalsIgnoreCase(anotherServiceURL)==false) response.sendError(HttpServletResponse.SC_FOUND);
+else response.sendError(HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+}
+}
+else
+{
+RequestDispatcher requestDispatcher;
+requestDispatcher=request.getRequestDispatcher(serviceURL);
+requestDispatcher.forward(request,response);
+}
+}catch(Exception exception)
+{
+System.out.println("Exception got raised in DoPost");
+System.out.println(exception);
+}
+} // doGet ends
+
