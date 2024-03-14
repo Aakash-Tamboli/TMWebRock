@@ -4,14 +4,21 @@ Class c;
 Path path;
 OnStartup onStartup;
 Forward forward;
-String str="";
-String str2="";
+String str=null;
+String str2=null;
+String name=null;
 boolean isGetAllowed=false;
 boolean isPostAllowed=false;
 String forwardTo=null;
 int priority;
 Service service=null;
 List<AutoWiredWrapper> autoWiredList=null;
+Field []props=null;
+Field property=null;
+Class type=null;
+Parameter []parameter=null;
+List<RequestedParameter> requestedParameterList=null;
+
 
 boolean injectApplicationDirectory=false;
 boolean injectApplicationScope=false;
@@ -31,20 +38,9 @@ for(String classes: list)
 {
 c=Class.forName(classes);
 
+// analyzing property of framework user starts
 
-
-
-
-
-
-
-
-
-
-
-// analyzing property of framework user classes starts
-
-Field []props=c.getDeclaredFields();
+props=c.getDeclaredFields();
 autoWiredList=null;
 
 if(props!=null && props.length!=0)
@@ -54,34 +50,15 @@ for(int i=0;i<props.length;i++)
 {
 if(props[i].isAnnotationPresent(AutoWired.class))
 {
-String name=props[i].getAnnotation(AutoWired.class).name();
-Class type=props[i].getType();
-autoWiredList.add(new AutoWiredWrapper(name,type));
+property=props[i];
+name=props[i].getAnnotation(AutoWired.class).name();
+type=props[i].getType();
+autoWiredList.add(new AutoWiredWrapper(property,name,type));
 }
 } // loop ends
 } // scanning props of Class
-// analyzing property of framework user classes ends
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+// analyzing property of framework user ends
 
 if(c.isAnnotationPresent(Path.class))
 {
@@ -109,6 +86,82 @@ isGetAllowed=false;
 // method loop starts
 for(Method m: c.getDeclaredMethods())
 {
+// Analysis of Parameter in Method starts
+parameter=m.getParameters();
+
+
+
+
+
+
+
+
+// Analysis of Parmeter in Method Starts
+
+
+requestedParameterList=null;
+if(parameter!=null && parameter.length!=0)
+{
+requestedParameterList=new ArrayList<>();
+for(int i=0;i<parameter.length;i++)
+{
+if(parameter[i].isAnnotationPresent(RequestParameter.class))
+{
+name=parameter[i].getAnnotation(RequestParameter.class).value();
+type=parameter[i].getType();
+requestedParameterList.add(new RequestedParameter(type,name));
+} // if block ends
+} // loop ends
+} // if ends
+// Analysis of Parmeter in Method ends
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 if(m.isAnnotationPresent(OnStartup.class)) priority=m.getAnnotation(OnStartup.class).Priority();
 else priority=-1;
 if(m.isAnnotationPresent(Path.class))
@@ -142,7 +195,8 @@ if(forwardTo.length()==0) forwardTo=null;
 }
 
 
-service=new Service(c,str+str2,forwardTo,m,isGetAllowed,isPostAllowed,false,priority,injectApplicationDirectory,injectApplicationScope,injectSessionScope,injectRequestScope,autoWiredList);
+
+service=new Service(c,str+str2,forwardTo,m,isGetAllowed,isPostAllowed,false,priority,injectApplicationDirectory,injectApplicationScope,injectSessionScope,injectRequestScope,autoWiredList,requestedParameterList);
 model.dataStructure.put(str+str2,service);
 forwardTo=null; // for next cycle
 }
@@ -150,7 +204,7 @@ else
 {
 if(priority!=-1)
 {
-service=new Service(c,"ONLY_FOR_STARTUP","ONLY_FOR_STARTUP",m,false,false,true,priority,injectApplicationDirectory,injectApplicationScope,injectSessionScope,injectRequestScope,autoWiredList);
+service=new Service(c,"ONLY_FOR_STARTUP","ONLY_FOR_STARTUP",m,false,false,true,priority,injectApplicationDirectory,injectApplicationScope,injectSessionScope,injectRequestScope,autoWiredList,requestedParameterList);
 startupList.add(service); // think about min-heap Aakash If Sir give you instruction you can implement it
 }
 }
@@ -169,8 +223,8 @@ injectRequestScope=false;
 System.out.println("Problem");
 }
 
-
-ServletContext servletContext=servletConfig.getServletContext(); //https://www.javatpoint.com/servletcontext
 servletContext.setAttribute("dataStructure",model);
+System.out.println("HashMap Size is: "+model.dataStructure.size());
+
 return startupList;
 } // method ends

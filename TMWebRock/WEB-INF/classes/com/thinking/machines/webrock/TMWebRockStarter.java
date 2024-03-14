@@ -187,7 +187,9 @@ isGetAllowed=false;
 // method loop starts
 for(Method m: c.getDeclaredMethods())
 {
+
 // Analysis of Parameter in Method starts
+
 parameter=m.getParameters();
 requestedParameterList=null;
 if(parameter!=null && parameter.length!=0)
@@ -199,11 +201,18 @@ if(parameter[i].isAnnotationPresent(RequestParameter.class))
 {
 name=parameter[i].getAnnotation(RequestParameter.class).value();
 type=parameter[i].getType();
-requestedParameterList.add(new RequestedParameter(type,name));
-} // if block ends
+requestedParameterList.add(new RequestedParameter(type,name,true));
+}
+else
+{
+name=""; // empty string
+type=parameter[i].getType();
+requestedParameterList.add(new RequestedParameter(type,name,false));
+} // if-else ends
 } // loop ends
 } // if ends
 // Analysis of Parmeter in Method ends
+
 
 
 if(m.isAnnotationPresent(OnStartup.class)) priority=m.getAnnotation(OnStartup.class).Priority();

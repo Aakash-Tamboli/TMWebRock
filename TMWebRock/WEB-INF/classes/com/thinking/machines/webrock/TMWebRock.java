@@ -33,6 +33,7 @@ HttpSession httpSession=request.getSession();
 
 // variable Declaration starts
 String key=null;
+String val=null;
 String serviceURL=null;
 String anotherServiceURL=null;
 String path=null;
@@ -93,41 +94,212 @@ for(int i=0;i<requestedParameterList.size();i++)
 {
 requestedParameter=requestedParameterList.get(i);
 type=requestedParameter.getType();
+
+
 if(type.equals(long.class) || type.equals(Long.class))
 {
-arguments[i]=Long.parseLong(request.getParameter(requestedParameter.getKey().trim()));
+if(requestedParameter.getIsAnnotationApplied())
+{
+val=request.getParameter(requestedParameter.getKey().trim());
+try
+{
+if(val==null) throw new Exception(requestedParameter.getKey()+" (Long Type) is not arrived at server side ~TMWebRock");
+val=val.trim();
+arguments[i]=Long.parseLong(val); // I will specify in docs if they method has multple parameter and only few of them applied annoation or in at server arrived data not found in your given RequestParameter(here) then default value of your parameter reffer to github.
+}catch(Exception exception)
+{
+System.out.println("TMWebRock Says Parsing Problem at Long: "+exception.getMessage());
+arguments[i]=new Long(-1);
+}
+}
+else
+{
+arguments[i]=new Long(-1);
+}
 }
 else if(type.equals(int.class) || type.equals(Integer.class))
 {
-arguments[i]=Integer.parseInt(request.getParameter(requestedParameter.getKey().trim()));
+if(requestedParameter.getIsAnnotationApplied())
+{
+val=request.getParameter(requestedParameter.getKey().trim());
+try
+{
+if(val==null) throw new Exception(requestedParameter.getKey()+" (Integer Type) is not arrived at server side ~TMWebRock");
+val=val.trim();
+arguments[i]=Integer.parseInt(val); // I will specify in docs if they method has multple parameter and only few of them applied annoation or in at server arrived data not found in your given RequestParameter(here) then default value of your parameter reffer to github.
+}catch(Exception exception)
+{
+System.out.println("TMWebRock Says Parsing Problem at Integer: "+exception.getMessage());
+arguments[i]=new Integer(-1);
+}
+}
+else
+{
+arguments[i]=new Integer(-1);
+}
 }
 else if(type.equals(short.class) || type.equals(Short.class))
 {
-arguments[i]=Short.parseShort(request.getParameter(requestedParameter.getKey().trim()));
+if(requestedParameter.getIsAnnotationApplied())
+{
+val=request.getParameter(requestedParameter.getKey().trim());
+try
+{
+if(val==null) throw new Exception(requestedParameter.getKey()+" (Short Type) is not arrived at server side ~TMWebRock");
+val=val.trim();
+arguments[i]=Short.parseShort(val); // I will specify in docs if they method has multple parameter and only few of them applied annoation or in at server arrived data not found in your given RequestParameter(here) then default value of your parameter reffer to github.
+}catch(Exception exception)
+{
+System.out.println("TMWebRock Says Parsing Problem at Short: "+exception.getMessage());
+arguments[i]=new Short((short)-1);
+}
+}
+else
+{
+arguments[i]=new Short((short)-1);
+}
 }
 else if(type.equals(byte.class) || type.equals(Byte.class))
 {
-arguments[i]=Byte.parseByte(request.getParameter(requestedParameter.getKey().trim()));
+
+if(requestedParameter.getIsAnnotationApplied())
+{
+val=request.getParameter(requestedParameter.getKey().trim());
+try
+{
+if(val==null) throw new Exception(requestedParameter.getKey()+" (Byte Type) is not arrived at server side ~TMWebRock");
+val=val.trim();
+arguments[i]=Byte.parseByte(val); // I will specify in docs if they method has multple parameter and only few of them applied annoation or in at server arrived data not found in your given RequestParameter(here) then default value of your parameter reffer to github.
+}catch(Exception exception)
+{
+System.out.println("TMWebRock Says Parsing Problem at Byte: "+exception.getMessage());
+arguments[i]=new Byte((byte)-1);
+}
+}
+else
+{
+arguments[i]=new Byte((byte)-1);
+}
+
 }
 else if(type.equals(double.class) || type.equals(Double.class))
 {
-arguments[i]=Double.parseDouble(request.getParameter(requestedParameter.getKey().trim()));
+if(requestedParameter.getIsAnnotationApplied())
+{
+
+val=request.getParameter(requestedParameter.getKey().trim());
+try
+{
+if(val==null) throw new Exception(requestedParameter.getKey()+" (Double Type) is not arrived at server side ~TMWebRock");
+val=val.trim();
+arguments[i]=Double.parseDouble(val); // I will specify in docs if they method has multple parameter and only few of them applied annoation or in at server arrived data not found in your given RequestParameter(here) then default value of your parameter reffer to github.
+}catch(Exception exception)
+{
+System.out.println("TMWebRock Says Parsing Problem at Double: "+exception.getMessage());
+arguments[i]=new Double((double)-1);
+}
+}
+else
+{
+arguments[i]=new Double((double)-1);
+}
+
 }
 else if(type.equals(float.class) || type.equals(Float.class))
 {
-arguments[i]=Float.parseFloat(request.getParameter(requestedParameter.getKey().trim()));
+
+if(requestedParameter.getIsAnnotationApplied())
+{
+
+val=request.getParameter(requestedParameter.getKey().trim());
+try
+{
+if(val==null) throw new Exception(requestedParameter.getKey()+" (Float Type) is not arrived at server side ~TMWebRock");
+val=val.trim();
+arguments[i]=Float.parseFloat(val); // I will specify in docs if they method has multple parameter and only few of them applied annoation or in at server arrived data not found in your given RequestParameter(here) then default value of your parameter reffer to github.
+}catch(Exception exception)
+{
+System.out.println("TMWebRock Says Parsing Problem at Float: "+exception.getMessage());
+arguments[i]=new Float((float)-1);
+}
+}
+else
+{
+arguments[i]=new Float((float)-1);
+}
+
+
 }
 else if(type.equals(char.class))
 {
-arguments[i]=request.getParameter(requestedParameter.getKey().trim()).charAt(0);
+
+if(requestedParameter.getIsAnnotationApplied())
+{
+
+val=request.getParameter(requestedParameter.getKey().trim());
+try
+{
+if(val==null) throw new Exception(requestedParameter.getKey()+" (Char Type) is not arrived at server side ~TMWebRock");
+val=val.trim();
+arguments[i]=val.charAt(0); // I will specify in docs if they method has multple parameter and only few of them applied annoation or in at server arrived data not found in your given RequestParameter(here) then default value of your parameter reffer to github.
+}catch(Exception exception)
+{
+System.out.println("TMWebRock Says Parsing Problem at Char: "+exception.getMessage());
+arguments[i]="  ".charAt(0);
+}
+}
+else
+{
+arguments[i]="  ".charAt(0);
+}
+
 }
 else if(type.equals(boolean.class) || type.equals(Boolean.class))
 {
-arguments[i]=Boolean.parseBoolean(request.getParameter(requestedParameter.getKey().trim()));
+
+if(requestedParameter.getIsAnnotationApplied())
+{
+
+val=request.getParameter(requestedParameter.getKey().trim());
+try
+{
+if(val==null) throw new Exception(requestedParameter.getKey()+" (Boolean Type) is not arrived at server side ~TMWebRock");
+val=val.trim();
+arguments[i]=Boolean.parseBoolean(val); // I will specify in docs if they method has multple parameter and only few of them applied annoation or in at server arrived data not found in your given RequestParameter(here) then default value of your parameter reffer to github.
+}catch(Exception exception)
+{
+System.out.println("TMWebRock Says Parsing Problem at Boolean: "+exception.getMessage());
+arguments[i]=new Boolean(false);
+}
+}
+else
+{
+arguments[i]=new Boolean(false);
+}
+
 }
 else if(type.equals(String.class))
 {
-arguments[i]=request.getParameter(requestedParameter.getKey()).trim();
+
+if(requestedParameter.getIsAnnotationApplied())
+{
+
+val=request.getParameter(requestedParameter.getKey().trim());
+try
+{
+if(val==null) throw new Exception(requestedParameter.getKey()+" (String Type) is not arrived at server side ~TMWebRock");
+val=val.trim();
+arguments[i]=val; // I will specify in docs if they method has multple parameter and only few of them applied annoation or in at server arrived data not found in your given RequestParameter(here) then default value of your parameter reffer to github.
+}catch(Exception exception)
+{
+System.out.println("TMWebRock Says Parsing Problem at String: "+exception.getMessage());
+arguments[i]="";
+}
+}
+else
+{
+arguments[i]="";
+}
 }
 } // loop ends
 } // prepare arguments for invoking
@@ -227,13 +399,13 @@ RequestDispatcher requestDispatcher;
 requestDispatcher=request.getRequestDispatcher(serviceURL);
 requestDispatcher.forward(request,response);
 }
+
 }catch(Exception exception)
 {
-System.out.println("Exception got raised in DoPost");
+System.out.println("Exception got raised in Do Get");
 System.out.println(exception);
 }
 } // doGet ends
-
 public void doPost(HttpServletRequest request,HttpServletResponse response)
 {
 try
@@ -245,6 +417,7 @@ HttpSession httpSession=request.getSession();
 
 // variable Declaration starts
 String key=null;
+String val=null;
 String serviceURL=null;
 String anotherServiceURL=null;
 String path=null;
@@ -289,6 +462,7 @@ subService=mainService.getService();
 targetClass=mainService.getServiceClass();
 instantiationOfClass=targetClass.newInstance();
 
+
 // RequestParameter implementation starts
 
 requestedParameterList=mainService.getRequestedParameterList();
@@ -300,46 +474,218 @@ for(int i=0;i<requestedParameterList.size();i++)
 {
 requestedParameter=requestedParameterList.get(i);
 type=requestedParameter.getType();
+
+
 if(type.equals(long.class) || type.equals(Long.class))
 {
-arguments[i]=Long.parseLong(request.getParameter(requestedParameter.getKey().trim()));
+if(requestedParameter.getIsAnnotationApplied())
+{
+val=request.getParameter(requestedParameter.getKey().trim());
+try
+{
+if(val==null) throw new Exception(requestedParameter.getKey()+" (Long Type) is not arrived at server side ~TMWebRock");
+val=val.trim();
+arguments[i]=Long.parseLong(val); // I will specify in docs if they method has multple parameter and only few of them applied annoation or in at server arrived data not found in your given RequestParameter(here) then default value of your parameter reffer to github.
+}catch(Exception exception)
+{
+System.out.println("TMWebRock Says Parsing Problem at Long: "+exception.getMessage());
+arguments[i]=new Long(-1);
+}
+}
+else
+{
+arguments[i]=new Long(-1);
+}
 }
 else if(type.equals(int.class) || type.equals(Integer.class))
 {
-arguments[i]=Integer.parseInt(request.getParameter(requestedParameter.getKey().trim()));
+if(requestedParameter.getIsAnnotationApplied())
+{
+val=request.getParameter(requestedParameter.getKey().trim());
+try
+{
+if(val==null) throw new Exception(requestedParameter.getKey()+" (Integer Type) is not arrived at server side ~TMWebRock");
+val=val.trim();
+arguments[i]=Integer.parseInt(val); // I will specify in docs if they method has multple parameter and only few of them applied annoation or in at server arrived data not found in your given RequestParameter(here) then default value of your parameter reffer to github.
+}catch(Exception exception)
+{
+System.out.println("TMWebRock Says Parsing Problem at Integer: "+exception.getMessage());
+arguments[i]=new Integer(-1);
+}
+}
+else
+{
+arguments[i]=new Integer(-1);
+}
 }
 else if(type.equals(short.class) || type.equals(Short.class))
 {
-arguments[i]=Short.parseShort(request.getParameter(requestedParameter.getKey().trim()));
+if(requestedParameter.getIsAnnotationApplied())
+{
+val=request.getParameter(requestedParameter.getKey().trim());
+try
+{
+if(val==null) throw new Exception(requestedParameter.getKey()+" (Short Type) is not arrived at server side ~TMWebRock");
+val=val.trim();
+arguments[i]=Short.parseShort(val); // I will specify in docs if they method has multple parameter and only few of them applied annoation or in at server arrived data not found in your given RequestParameter(here) then default value of your parameter reffer to github.
+}catch(Exception exception)
+{
+System.out.println("TMWebRock Says Parsing Problem at Short: "+exception.getMessage());
+arguments[i]=new Short((short)-1);
+}
+}
+else
+{
+arguments[i]=new Short((short)-1);
+}
 }
 else if(type.equals(byte.class) || type.equals(Byte.class))
 {
-arguments[i]=Byte.parseByte(request.getParameter(requestedParameter.getKey().trim()));
+
+if(requestedParameter.getIsAnnotationApplied())
+{
+val=request.getParameter(requestedParameter.getKey().trim());
+try
+{
+if(val==null) throw new Exception(requestedParameter.getKey()+" (Byte Type) is not arrived at server side ~TMWebRock");
+val=val.trim();
+arguments[i]=Byte.parseByte(val); // I will specify in docs if they method has multple parameter and only few of them applied annoation or in at server arrived data not found in your given RequestParameter(here) then default value of your parameter reffer to github.
+}catch(Exception exception)
+{
+System.out.println("TMWebRock Says Parsing Problem at Byte: "+exception.getMessage());
+arguments[i]=new Byte((byte)-1);
+}
+}
+else
+{
+arguments[i]=new Byte((byte)-1);
+}
+
 }
 else if(type.equals(double.class) || type.equals(Double.class))
 {
-arguments[i]=Double.parseDouble(request.getParameter(requestedParameter.getKey().trim()));
+if(requestedParameter.getIsAnnotationApplied())
+{
+
+val=request.getParameter(requestedParameter.getKey().trim());
+try
+{
+if(val==null) throw new Exception(requestedParameter.getKey()+" (Double Type) is not arrived at server side ~TMWebRock");
+val=val.trim();
+arguments[i]=Double.parseDouble(val); // I will specify in docs if they method has multple parameter and only few of them applied annoation or in at server arrived data not found in your given RequestParameter(here) then default value of your parameter reffer to github.
+}catch(Exception exception)
+{
+System.out.println("TMWebRock Says Parsing Problem at Double: "+exception.getMessage());
+arguments[i]=new Double((double)-1);
+}
+}
+else
+{
+arguments[i]=new Double((double)-1);
+}
+
 }
 else if(type.equals(float.class) || type.equals(Float.class))
 {
-arguments[i]=Float.parseFloat(request.getParameter(requestedParameter.getKey().trim()));
+
+if(requestedParameter.getIsAnnotationApplied())
+{
+
+val=request.getParameter(requestedParameter.getKey().trim());
+try
+{
+if(val==null) throw new Exception(requestedParameter.getKey()+" (Float Type) is not arrived at server side ~TMWebRock");
+val=val.trim();
+arguments[i]=Float.parseFloat(val); // I will specify in docs if they method has multple parameter and only few of them applied annoation or in at server arrived data not found in your given RequestParameter(here) then default value of your parameter reffer to github.
+}catch(Exception exception)
+{
+System.out.println("TMWebRock Says Parsing Problem at Float: "+exception.getMessage());
+arguments[i]=new Float((float)-1);
+}
+}
+else
+{
+arguments[i]=new Float((float)-1);
+}
+
+
 }
 else if(type.equals(char.class))
 {
-arguments[i]=request.getParameter(requestedParameter.getKey().trim()).charAt(0);
+
+if(requestedParameter.getIsAnnotationApplied())
+{
+
+val=request.getParameter(requestedParameter.getKey().trim());
+try
+{
+if(val==null) throw new Exception(requestedParameter.getKey()+" (Char Type) is not arrived at server side ~TMWebRock");
+val=val.trim();
+arguments[i]=val.charAt(0); // I will specify in docs if they method has multple parameter and only few of them applied annoation or in at server arrived data not found in your given RequestParameter(here) then default value of your parameter reffer to github.
+}catch(Exception exception)
+{
+System.out.println("TMWebRock Says Parsing Problem at Char: "+exception.getMessage());
+arguments[i]="  ".charAt(0);
+}
+}
+else
+{
+arguments[i]="  ".charAt(0);
+}
+
 }
 else if(type.equals(boolean.class) || type.equals(Boolean.class))
 {
-arguments[i]=Boolean.parseBoolean(request.getParameter(requestedParameter.getKey().trim()));
+
+if(requestedParameter.getIsAnnotationApplied())
+{
+
+val=request.getParameter(requestedParameter.getKey().trim());
+try
+{
+if(val==null) throw new Exception(requestedParameter.getKey()+" (Boolean Type) is not arrived at server side ~TMWebRock");
+val=val.trim();
+arguments[i]=Boolean.parseBoolean(val); // I will specify in docs if they method has multple parameter and only few of them applied annoation or in at server arrived data not found in your given RequestParameter(here) then default value of your parameter reffer to github.
+}catch(Exception exception)
+{
+System.out.println("TMWebRock Says Parsing Problem at Boolean: "+exception.getMessage());
+arguments[i]=new Boolean(false);
+}
+}
+else
+{
+arguments[i]=new Boolean(false);
+}
+
 }
 else if(type.equals(String.class))
 {
-arguments[i]=request.getParameter(requestedParameter.getKey()).trim();
+
+if(requestedParameter.getIsAnnotationApplied())
+{
+
+val=request.getParameter(requestedParameter.getKey().trim());
+try
+{
+if(val==null) throw new Exception(requestedParameter.getKey()+" (String Type) is not arrived at server side ~TMWebRock");
+val=val.trim();
+arguments[i]=val; // I will specify in docs if they method has multple parameter and only few of them applied annoation or in at server arrived data not found in your given RequestParameter(here) then default value of your parameter reffer to github.
+}catch(Exception exception)
+{
+System.out.println("TMWebRock Says Parsing Problem at String: "+exception.getMessage());
+arguments[i]="";
+}
+}
+else
+{
+arguments[i]="";
+}
 }
 } // loop ends
 } // prepare arguments for invoking
 
 // RequestParamter implementation ends
+
 
 
 // implementing AutoWire Feature starts
