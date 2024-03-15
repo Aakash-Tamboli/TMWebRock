@@ -107,6 +107,7 @@ OnStartup onStartup;
 Forward forward;
 String str=null;
 String str2=null;
+String key=null;
 String name=null;
 boolean isGetAllowed=false;
 boolean isPostAllowed=false;
@@ -119,6 +120,7 @@ Field property=null;
 Class type=null;
 Parameter []parameter=null;
 List<RequestedParameter> requestedParameterList=null;
+List<RequestedParameterProperty> requestedParameterPropertyList=null;
 
 
 boolean injectApplicationDirectory=false;
@@ -143,10 +145,14 @@ c=Class.forName(classes);
 
 props=c.getDeclaredFields();
 autoWiredList=null;
+requestedParameterPropertyList=null;
+
 
 if(props!=null && props.length!=0)
 {
 autoWiredList=new ArrayList<>();
+requestedParameterPropertyList=new ArrayList<>();
+
 for(int i=0;i<props.length;i++)
 {
 if(props[i].isAnnotationPresent(AutoWired.class))
@@ -156,7 +162,20 @@ name=props[i].getAnnotation(AutoWired.class).name();
 type=props[i].getType();
 autoWiredList.add(new AutoWiredWrapper(property,name,type));
 }
+else if(props[i].isAnnotationPresent(InjectRequestParameter.class))
+{
+key=props[i].getAnnotation(InjectRequestParameter.class).value();
+if(key==null || key.length()==0) continue; // if user not giving key then why should I kept on my ds
+type=props[i].getType();
+name=props[i].getName();
+requestedParameterPropertyList.add(new RequestedParameterProperty(type,key,name));
+}
 } // loop ends
+
+// Why Should keep empty list in my Service Class object that why I null them 
+if(autoWiredList.size()==0) autoWiredList=null;
+if(requestedParameterPropertyList.size()==0) requestedParameterPropertyList=null;
+
 } // scanning props of Class
 
 // analyzing property of framework user ends
@@ -171,6 +190,7 @@ if(c.isAnnotationPresent(InjectApplicationDirectory.class)) injectApplicationDir
 if(c.isAnnotationPresent(InjectApplicationScope.class)) injectApplicationScope=true;
 if(c.isAnnotationPresent(InjectSessionScope.class)) injectSessionScope=true;
 if(c.isAnnotationPresent(InjectRequestScope.class)) injectRequestScope=true;
+
 
 if(c.isAnnotationPresent(GET.class))
 {
@@ -262,10 +282,11 @@ System.out.println("Class Required Inject Application Scope: "+injectApplication
 System.out.println("Class Required Inject Session Scope: "+injectSessionScope);
 System.out.println("Class Required Inject Request Scope: "+injectRequestScope);
 System.out.println("Does Class Have Property: "+autoWiredList);
+System.out.println("Does Class property uses Inject Request Parameter annotation: "+requestedParameterPropertyList);
 System.out.println("---------------------"+objectCount+"---------------------");
 objectCount++;
 
-service=new Service(c,str+str2,forwardTo,m,isGetAllowed,isPostAllowed,false,priority,injectApplicationDirectory,injectApplicationScope,injectSessionScope,injectRequestScope,autoWiredList,requestedParameterList);
+service=new Service(c,str+str2,forwardTo,m,isGetAllowed,isPostAllowed,false,priority,injectApplicationDirectory,injectApplicationScope,injectSessionScope,injectRequestScope,autoWiredList,requestedParameterList,requestedParameterPropertyList);
 model.dataStructure.put(str+str2,service);
 forwardTo=null; // for next cycle
 }
@@ -285,7 +306,7 @@ System.out.println("Startup Service "+true);
 System.out.println("prioity No: "+priority);
 System.out.println("---------------------"+objectCount+"---------------------");
 objectCount++;
-service=new Service(c,"ONLY_FOR_STARTUP","ONLY_FOR_STARTUP",m,false,false,true,priority,injectApplicationDirectory,injectApplicationScope,injectSessionScope,injectRequestScope,autoWiredList,requestedParameterList);
+service=new Service(c,"ONLY_FOR_STARTUP","ONLY_FOR_STARTUP",m,false,false,true,priority,injectApplicationDirectory,injectApplicationScope,injectSessionScope,injectRequestScope,autoWiredList,requestedParameterList,requestedParameterPropertyList);
 startupList.add(service); // think about min-heap Aakash If Sir give you instruction you can implement it
 }
 }

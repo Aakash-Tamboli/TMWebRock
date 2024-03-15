@@ -2,12 +2,13 @@
 It means Framework user wants may be [ApplicationDirectory](/Documentation/Dependencies/ApplicationDirectory.md), [ApplicationScope](/Documentation/Dependencies/ApplicationScope.md), [SessionScope](/Documentation/Dependencies/SessionScope.md), [RequestScope](/Documentation/Dependencies/RequestScope.md).
 
 ### Rules related to Inject
-<b>If you break any rule then you won't able to inject dependencies</b>
+<b>If you break any rule then you won't able to receive dependencies</b>
 
 1) Dependencies Injection Annotation only Applied on Classes not on Method
 2) Framework user/You Must take property of your desired Dependencies.
-3) Framework user/You must write Appropriate setter method along with approprite parameter for Dependenies you taken as property.
-4) Setter Method Name should be Stricly follow as mentioned below.
+3) Framework user/You must write Appropriate setter method along with approprite parameter for Dependency you want to take as in property.
+ <b>If setter method is not found then on server window you will recieve TMWebRock message </b>
+4) Setter Method Name should be (Camel Case) Stricly follow as mentioned below.
     ```java
     public void setApplicationDirectory(ApplicationDirectory applicationDirectory)
     {

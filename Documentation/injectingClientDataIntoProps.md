@@ -1,3 +1,10 @@
+# Injecting Client Data into Service Class Propert
+
+I will writing after sometime, for self refference "It uses @InjectRequestParameter Annoation"
+
+
+Testcase:
+```java
 package bobby.test;
 import com.thinking.machines.webrock.scope.*;
 import com.thinking.machines.webrock.annotations.*;
@@ -41,3 +48,8 @@ public void add2(int rollNumber)
 // nothing
 }
 }
+
+
+
+
+```
