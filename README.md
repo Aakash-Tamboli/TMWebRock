@@ -9,6 +9,7 @@ All the features provide by TMWebRock Server are listed below with Docs.
 [Dependendies Injection Feature](/Documentation/DependenciesInjection.md) <br>
 [Get Arrived data into your Class](/Documentation/RequestParameter.md) <br>
 [Get Arrived data into your class property](Documentation/injectingClientDataIntoProps.md) <br>
+[Get JSON data into your class service](Documentation/GetJSONIntoClassService.md) <br>
 
 
 ## Tools I've used 

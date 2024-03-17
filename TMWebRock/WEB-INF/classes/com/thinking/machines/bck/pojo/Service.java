@@ -19,7 +19,6 @@ private boolean injectRequestScope;
 private List<AutoWiredWrapper> autoWired;
 private List<RequestedParameter> requestedParameterList;
 private List<RequestedParameterProperty> requestedParameterPropertyList;
-private boolean isJSONRequired;
 
 // Sir say "It will be more in future so mentally prepared"
 // constructor starts
@@ -40,9 +39,8 @@ this.injectRequestScope=false;
 this.autoWired=null;
 this.requestedParameterList=null;
 this.requestedParameterPropertyList=null;
-this.isJSONRequired=false;
 }
-public Service(Class serviceClass,String path,String forwardTo,Method service,boolean isGetAllowed,boolean isPostAllowed,boolean runOnStart,int priority,boolean injectApplicationDirectory,boolean injectApplicationScope,boolean injectSessionScope,boolean injectRequestScope,List<AutoWiredWrapper> autoWired,List<RequestedParameter> requestedParameterList,List<RequestedParameterProperty> requestedParameterPropertyList,boolean isJSONRequired)
+public Service(Class serviceClass,String path,String forwardTo,Method service,boolean isGetAllowed,boolean isPostAllowed,boolean runOnStart,int priority,boolean injectApplicationDirectory,boolean injectApplicationScope,boolean injectSessionScope,boolean injectRequestScope,List<AutoWiredWrapper> autoWired,List<RequestedParameter> requestedParameterList,List<RequestedParameterProperty> requestedParameterPropertyList)
 {
 this.serviceClass=serviceClass;
 this.path=path;
@@ -59,7 +57,6 @@ this.injectRequestScope=injectRequestScope;
 this.autoWired=autoWired;
 this.requestedParameterList=requestedParameterList;
 this.requestedParameterPropertyList=requestedParameterPropertyList;
-this.isJSONRequired=isJSONRequired;
 }
 // constructor ends
 // setter starts
@@ -123,10 +120,6 @@ public void setRequestedParameterPropertyList(List<RequestedParameterProperty> r
 {
 this.requestedParameterPropertyList=requestedParameterPropertyList;
 }
-public void setIsJSONRequired(boolean isJSONRequired)
-{
-this.isJSONRequired=isJSONRequired;
-}
 
 // setter ends
 // getter starts
@@ -189,10 +182,6 @@ return this.requestedParameterList;
 public List<RequestedParameterProperty> getRequestedParameterPropertyList()
 {
 return this.requestedParameterPropertyList;
-}
-public boolean getIsJSONRequired()
-{
-return this.isJSONRequired;
 }
 // getter ends
 }

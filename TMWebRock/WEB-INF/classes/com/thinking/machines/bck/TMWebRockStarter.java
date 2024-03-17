@@ -3,7 +3,6 @@ import javax.servlet.*;
 import javax.servlet.http.*;
 import com.thinking.machines.webrock.model.*;
 import com.thinking.machines.webrock.annotations.*;
-import com.thinking.machines.webrock.scope.*;
 import com.thinking.machines.webrock.pojo.*;
 import java.lang.reflect.*;
 import java.io.*;
@@ -268,68 +267,9 @@ forwardTo=forward.value();
 if(forwardTo.length()==0) forwardTo=null;
 }
 
-// Here I think check JSON feature implementation starts
+// Here I think check JSON factor starts
 
-
-service=new Service(c,str+str2,forwardTo,m,isGetAllowed,isPostAllowed,false,priority,injectApplicationDirectory,injectApplicationScope,injectSessionScope,injectRequestScope,autoWiredList,requestedParameterList,requestedParameterPropertyList,false);
-
-if(parameter!=null)
-{
-if((isGetAllowed || isPostAllowed) && str2.length()>0 && m.isAnnotationPresent(Forward.class)==false && m.isAnnotationPresent(OnStartup.class)==false)
-{
-
-if(parameter.length==0)
-{
-if((isGetAllowed || isPostAllowed) && str2.length()>0 && m.isAnnotationPresent(Forward.class)==false && m.isAnnotationPresent(OnStartup.class)==false)
-{
-service.setIsJSONRequired(true);
-System.out.println("Yes JSON will come from Client, not have parameter to recive I just to call");
-}
-}
-else
-{
-int count=0;
-for(int i=0;i<parameter.length;i++)
-{
-type=parameter[i].getType();
-if(
-!(
-type.equals(ApplicationDirectory.class) ||
-type.equals(ApplicationScope.class) ||
-type.equals(SessionScope.class) ||
-type.equals(RequestScope.class) ||
-type.equals(long.class) ||
-type.equals(Long.class) ||
-type.equals(int.class) ||
-type.equals(Integer.class) ||
-type.equals(short.class) ||
-type.equals(Short.class) ||
-type.equals(byte.class) ||
-type.equals(Byte.class) ||
-type.equals(double.class) ||
-type.equals(Double.class) ||
-type.equals(float.class) ||
-type.equals(Float.class) ||
-type.equals(char.class) ||
-type.equals(boolean.class) ||
-type.equals(Boolean.class) ||
-type.equals(String.class)
-)
-)
-{
-count++;
-}
-}
-if(count==1)
-{
-System.out.println("Yes JSON will come from Client, also have parameter to recive I just have to parse it and call");
-service.setIsJSONRequired(true); // it means according to docs only one parameter is different, which user want data into that.
-}
-}
-}
-}
-
-// Here I think check JSON feature implementation  ends
+// Here I think check JSON factor ends
 
 
 System.out.println("---------------------"+objectCount+"---------------------");
@@ -348,11 +288,10 @@ System.out.println("Class Required Inject Session Scope: "+injectSessionScope);
 System.out.println("Class Required Inject Request Scope: "+injectRequestScope);
 System.out.println("Does Class Have Property: "+autoWiredList);
 System.out.println("Does Class property uses Inject Request Parameter annotation: "+requestedParameterPropertyList);
-System.out.println("Does Class's Service tell that JSON will come from client side:"+service.getIsJSONRequired());
 System.out.println("---------------------"+objectCount+"---------------------");
 objectCount++;
 
-
+service=new Service(c,str+str2,forwardTo,m,isGetAllowed,isPostAllowed,false,priority,injectApplicationDirectory,injectApplicationScope,injectSessionScope,injectRequestScope,autoWiredList,requestedParameterList,requestedParameterPropertyList);
 model.dataStructure.put(str+str2,service);
 forwardTo=null; // for next cycle
 }
@@ -372,7 +311,7 @@ System.out.println("Startup Service "+true);
 System.out.println("prioity No: "+priority);
 System.out.println("---------------------"+objectCount+"---------------------");
 objectCount++;
-service=new Service(c,"ONLY_FOR_STARTUP","ONLY_FOR_STARTUP",m,false,false,true,priority,injectApplicationDirectory,injectApplicationScope,injectSessionScope,injectRequestScope,autoWiredList,requestedParameterList,requestedParameterPropertyList,false);
+service=new Service(c,"ONLY_FOR_STARTUP","ONLY_FOR_STARTUP",m,false,false,true,priority,injectApplicationDirectory,injectApplicationScope,injectSessionScope,injectRequestScope,autoWiredList,requestedParameterList,requestedParameterPropertyList);
 startupList.add(service); // think about min-heap Aakash If Sir give you instruction you can implement it
 }
 }

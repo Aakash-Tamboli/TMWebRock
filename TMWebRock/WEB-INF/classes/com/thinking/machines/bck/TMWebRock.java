@@ -2,7 +2,6 @@ package com.thinking.machines.webrock;
 import javax.servlet.*;
 import javax.servlet.http.*;
 import java.lang.reflect.*;
-import com.google.gson.*;
 import java.io.*;
 import java.util.*;
 import com.thinking.machines.webrock.annotations.*;
@@ -232,7 +231,7 @@ return null;
 }
 }
 
-private Object[] requestParameterFeature() throws Exception
+private Object[] requestParameterFeature()
 {
 // RequestParameter implementation starts
 Object[] arguments=null;
@@ -246,18 +245,11 @@ String path=null;
 String val=null;
 String key=null;
 Class type=null;
-Gson gson=null;
-
 
 requestedParameterList=mainService.getRequestedParameterList();
-
-System.out.println("request Parameter feature method invoked");
-
 if(requestedParameterList!=null)
 {
 arguments=new Object[requestedParameterList.size()];
-System.out.println("Method have Number of arguments: "+requestedParameterList.size());
-
 
 path=servletContext.getRealPath("/"); //https://stackoverflow.com/questions/12160639/what-does-servletcontext-getrealpath-mean-and-when-should-i-use-it
 applicationDirectory=new ApplicationDirectory(new File(path));
@@ -281,38 +273,7 @@ if(arguments[i]!=null) continue; // it means any of above condition executed
 
 // if service tells JSON the only assignemtn in arguments[i] will be come up and rest will be ignored means continue key
 
-if(mainService.getIsJSONRequired())
-{
-System.out.println("Parameter Type: "+type.getSimpleName());
 
-try
-{
-BufferedReader bufferedReader=request.getReader();
-StringBuffer stringBuffer=new StringBuffer();
-String chunk;
-
-while(true)
-{
-chunk=bufferedReader.readLine();
-if(chunk==null) break;
-stringBuffer.append(chunk);
-} // loop ends
-
-String json=stringBuffer.toString();
-System.out.println("JSON TMWebRock recieve: "+json);
-
-gson=new Gson();
-
-Object object=gson.fromJson(json,type);
-arguments[i]=object;
-
-
-}catch(Exception exception)
-{
-throw exception;
-}
-continue;
-}
 // here I think I have to put JSON feature code ends
 
 key=requestedParameter.getKey().trim();
@@ -432,26 +393,11 @@ System.out.println("[doGet] RequestType : "+mainService.getIsGetAllowed());
 
 if(mainService.getIsGetAllowed() && serviceURL.equalsIgnoreCase(anotherServiceURL) )
 {
-
 targetClass=mainService.getServiceClass();
 subService=mainService.getService();
 instantiationOfClass=targetClass.newInstance();
 
-// JSON feature starts
-try
-{
 arguments=requestParameterFeature();
-}catch(Exception exception)
-{
-System.out.println("Unable to parse JSON data into your parameters, please reffer docs for rectify your mistake");
-System.out.println("Problem: "+exception.getMessage());
-return;
-}
-
-System.out.println("Hioiiiiiiiiiiiiiiiiiiiiiiiiiiiii");
-
-
-// JSON feature ends
 
 // implementing AutoWire Feature starts
 autoWiredList=mainService.getAutoWired();
@@ -573,10 +519,7 @@ System.out.println("Exception : "+exception.getMessage());
 }
 }
 // above code of injecting things or IOC ends
-// done done
 subService.invoke(instantiationOfClass,arguments);
-
-
 // here forward related code
 if(mainService.getForwardTo()!=null && mainService.getForwardTo().length()>0)
 {
@@ -606,16 +549,13 @@ System.out.println(exception);
 }
 } // doGet ends
 
-
-
 public void doPost(HttpServletRequest request,HttpServletResponse response)
 {
 try
 {
 // Container fetching starts
-// servletContext=request.getServletContext(); no need
-this.httpSession=request.getSession();
-this.request=request;
+ServletContext servletContext=request.getServletContext();
+HttpSession httpSession=request.getSession();
 // Container fetching ends
 
 // variable Declaration starts
@@ -625,23 +565,24 @@ String serviceURL=null;
 String anotherServiceURL=null;
 String path=null;
 String name=null;
+Service mainService=null;
+Class targetClass=null;
 Method subService=null;
 Method setterMethod=null;
+Object instantiationOfClass=null;
 ApplicationDirectory applicationDirectory=null;
 ApplicationScope applicationScope=null;
 SessionScope sessionScope=null;
 RequestScope requestScope=null;
-List<AutoWiredWrapper> autoWiredList=null;
+List<AutoWiredWrapper> list=null;
 Object value=null;
 Class type=null;
 Field property=null;
-List<RequestedParameter> requestedParameterList=null;
-List<RequestedParameterProperty> requestedParameterPropertyList=null;
-Object []arguments=null;
 RequestedParameter requestedParameter=null;
+List<RequestedParameter> requestedParameterList=null;
+Object []arguments=null;
 
 // varaible Declarration ends
-
 
 System.out.println("DEBUG: "+request.getContextPath());
 System.out.println("DEBUG: "+request.getPathInfo());
@@ -651,46 +592,279 @@ key=request.getPathInfo();
 serviceURL=key.substring(key.indexOf("/",1));
 System.out.println("Service URL: "+serviceURL);
 
-
 if(model.dataStructure.containsKey(key))
 {
 System.out.println("God is Great key is there");
 mainService=model.dataStructure.get(key);
 anotherServiceURL=mainService.getPath().substring(key.indexOf("/",1));
-
 System.out.println("Another Service URL: "+anotherServiceURL);
-System.out.println("[doPost] RequestType : "+mainService.getIsPostAllowed());
-
-
+System.out.println("[doPost]RequestType : "+mainService.getIsPostAllowed());
 if(mainService.getIsPostAllowed() && serviceURL.equalsIgnoreCase(anotherServiceURL) )
 {
-
-targetClass=mainService.getServiceClass();
 subService=mainService.getService();
+targetClass=mainService.getServiceClass();
 instantiationOfClass=targetClass.newInstance();
 
-// JSON feature starts
+
+// RequestParameter implementation starts
+
+requestedParameterList=mainService.getRequestedParameterList();
+if(requestedParameterList!=null)
+{
+arguments=new Object[requestedParameterList.size()];
+
+path=servletContext.getRealPath("/"); //https://stackoverflow.com/questions/12160639/what-does-servletcontext-getrealpath-mean-and-when-should-i-use-it
+applicationDirectory=new ApplicationDirectory(new File(path));
+applicationScope=new ApplicationScope(servletContext);
+sessionScope=new SessionScope(httpSession);
+requestScope=new RequestScope(request);
+
+for(int i=0;i<requestedParameterList.size();i++)
+{
+requestedParameter=requestedParameterList.get(i);
+type=requestedParameter.getType();
+
+if(type.equals(ApplicationDirectory.class))
+{
+arguments[i]=applicationDirectory;
+}
+else if(type.equals(ApplicationScope.class))
+{
+arguments[i]=applicationScope;
+}
+else if(type.equals(SessionScope.class))
+{
+arguments[i]=sessionScope;
+}
+else if(type.equals(RequestScope.class))
+{
+arguments[i]=requestScope;
+}
+else if(type.equals(long.class) || type.equals(Long.class))
+{
+if(requestedParameter.getIsAnnotationApplied())
+{
+val=request.getParameter(requestedParameter.getKey().trim());
 try
 {
-arguments=requestParameterFeature();
+if(val==null) throw new Exception(requestedParameter.getKey()+" (Long Type) is not arrived at server side ~TMWebRock");
+val=val.trim();
+arguments[i]=Long.parseLong(val); // I will specify in docs if they method has multple parameter and only few of them applied annoation or in at server arrived data not found in your given RequestParameter(here) then default value of your parameter reffer to github.
 }catch(Exception exception)
 {
-System.out.println("Unable to parse JSON data into your parameters, please reffer docs for rectify your mistake");
-System.out.println("Problem: "+exception.getMessage());
-response.sendError(response.SC_INTERNAL_SERVER_ERROR,"Unable to parse JSON data into your parameters, please reffer docs for rectify your mistake");
-return;
+System.out.println("TMWebRock Says Parsing Problem at Long: "+exception.getMessage());
+arguments[i]=new Long(-1);
+}
+}
+else
+{
+arguments[i]=new Long(-1);
+}
+}
+else if(type.equals(int.class) || type.equals(Integer.class))
+{
+if(requestedParameter.getIsAnnotationApplied())
+{
+val=request.getParameter(requestedParameter.getKey().trim());
+try
+{
+if(val==null) throw new Exception(requestedParameter.getKey()+" (Integer Type) is not arrived at server side ~TMWebRock");
+val=val.trim();
+arguments[i]=Integer.parseInt(val); // I will specify in docs if they method has multple parameter and only few of them applied annoation or in at server arrived data not found in your given RequestParameter(here) then default value of your parameter reffer to github.
+}catch(Exception exception)
+{
+System.out.println("TMWebRock Says Parsing Problem at Integer: "+exception.getMessage());
+arguments[i]=new Integer(-1);
+}
+}
+else
+{
+arguments[i]=new Integer(-1);
+}
+}
+else if(type.equals(short.class) || type.equals(Short.class))
+{
+if(requestedParameter.getIsAnnotationApplied())
+{
+val=request.getParameter(requestedParameter.getKey().trim());
+try
+{
+if(val==null) throw new Exception(requestedParameter.getKey()+" (Short Type) is not arrived at server side ~TMWebRock");
+val=val.trim();
+arguments[i]=Short.parseShort(val); // I will specify in docs if they method has multple parameter and only few of them applied annoation or in at server arrived data not found in your given RequestParameter(here) then default value of your parameter reffer to github.
+}catch(Exception exception)
+{
+System.out.println("TMWebRock Says Parsing Problem at Short: "+exception.getMessage());
+arguments[i]=new Short((short)-1);
+}
+}
+else
+{
+arguments[i]=new Short((short)-1);
+}
+}
+else if(type.equals(byte.class) || type.equals(Byte.class))
+{
+
+if(requestedParameter.getIsAnnotationApplied())
+{
+val=request.getParameter(requestedParameter.getKey().trim());
+try
+{
+if(val==null) throw new Exception(requestedParameter.getKey()+" (Byte Type) is not arrived at server side ~TMWebRock");
+val=val.trim();
+arguments[i]=Byte.parseByte(val); // I will specify in docs if they method has multple parameter and only few of them applied annoation or in at server arrived data not found in your given RequestParameter(here) then default value of your parameter reffer to github.
+}catch(Exception exception)
+{
+System.out.println("TMWebRock Says Parsing Problem at Byte: "+exception.getMessage());
+arguments[i]=new Byte((byte)-1);
+}
+}
+else
+{
+arguments[i]=new Byte((byte)-1);
+}
+
+}
+else if(type.equals(double.class) || type.equals(Double.class))
+{
+if(requestedParameter.getIsAnnotationApplied())
+{
+
+val=request.getParameter(requestedParameter.getKey().trim());
+try
+{
+if(val==null) throw new Exception(requestedParameter.getKey()+" (Double Type) is not arrived at server side ~TMWebRock");
+val=val.trim();
+arguments[i]=Double.parseDouble(val); // I will specify in docs if they method has multple parameter and only few of them applied annoation or in at server arrived data not found in your given RequestParameter(here) then default value of your parameter reffer to github.
+}catch(Exception exception)
+{
+System.out.println("TMWebRock Says Parsing Problem at Double: "+exception.getMessage());
+arguments[i]=new Double((double)-1);
+}
+}
+else
+{
+arguments[i]=new Double((double)-1);
+}
+
+}
+else if(type.equals(float.class) || type.equals(Float.class))
+{
+
+if(requestedParameter.getIsAnnotationApplied())
+{
+
+val=request.getParameter(requestedParameter.getKey().trim());
+try
+{
+if(val==null) throw new Exception(requestedParameter.getKey()+" (Float Type) is not arrived at server side ~TMWebRock");
+val=val.trim();
+arguments[i]=Float.parseFloat(val); // I will specify in docs if they method has multple parameter and only few of them applied annoation or in at server arrived data not found in your given RequestParameter(here) then default value of your parameter reffer to github.
+}catch(Exception exception)
+{
+System.out.println("TMWebRock Says Parsing Problem at Float: "+exception.getMessage());
+arguments[i]=new Float((float)-1);
+}
+}
+else
+{
+arguments[i]=new Float((float)-1);
 }
 
 
+}
+else if(type.equals(char.class))
+{
 
-// JSON feature ends
+if(requestedParameter.getIsAnnotationApplied())
+{
+
+val=request.getParameter(requestedParameter.getKey().trim());
+try
+{
+if(val==null) throw new Exception(requestedParameter.getKey()+" (Char Type) is not arrived at server side ~TMWebRock");
+val=val.trim();
+arguments[i]=val.charAt(0); // I will specify in docs if they method has multple parameter and only few of them applied annoation or in at server arrived data not found in your given RequestParameter(here) then default value of your parameter reffer to github.
+}catch(Exception exception)
+{
+System.out.println("TMWebRock Says Parsing Problem at Char: "+exception.getMessage());
+arguments[i]="  ".charAt(0);
+}
+}
+else
+{
+arguments[i]="  ".charAt(0);
+}
+
+}
+else if(type.equals(boolean.class) || type.equals(Boolean.class))
+{
+
+if(requestedParameter.getIsAnnotationApplied())
+{
+
+val=request.getParameter(requestedParameter.getKey().trim());
+try
+{
+if(val==null) throw new Exception(requestedParameter.getKey()+" (Boolean Type) is not arrived at server side ~TMWebRock");
+val=val.trim();
+arguments[i]=Boolean.parseBoolean(val); // I will specify in docs if they method has multple parameter and only few of them applied annoation or in at server arrived data not found in your given RequestParameter(here) then default value of your parameter reffer to github.
+}catch(Exception exception)
+{
+System.out.println("TMWebRock Says Parsing Problem at Boolean: "+exception.getMessage());
+arguments[i]=new Boolean(false);
+}
+}
+else
+{
+arguments[i]=new Boolean(false);
+}
+
+}
+else if(type.equals(String.class))
+{
+
+if(requestedParameter.getIsAnnotationApplied())
+{
+
+val=request.getParameter(requestedParameter.getKey().trim());
+try
+{
+if(val==null) throw new Exception(requestedParameter.getKey()+" (String Type) is not arrived at server side ~TMWebRock");
+val=val.trim();
+arguments[i]=val; // I will specify in docs if they method has multple parameter and only few of them applied annoation or in at server arrived data not found in your given RequestParameter(here) then default value of your parameter reffer to github.
+}catch(Exception exception)
+{
+System.out.println("TMWebRock Says Parsing Problem at String: "+exception.getMessage());
+arguments[i]="";
+}
+}
+else
+{
+arguments[i]="";
+}
+}
+else
+{
+// It means TMWebRock user gives custom class
+arguments[i]=null;
+}
+} // loop ends
+} // prepare arguments for invoking
+
+// RequestParamter implementation ends
+
+
+
+
 
 // implementing AutoWire Feature starts
-autoWiredList=mainService.getAutoWired();
+list=mainService.getAutoWired();
 
-if(autoWiredList!=null)
+if(list!=null)
 {
-for(AutoWiredWrapper autoWired: autoWiredList)
+for(AutoWiredWrapper autoWired: list)
 {
 value=null;
 property=autoWired.getProperty();
@@ -729,18 +903,9 @@ property.setAccessible(false);
 // implementing AutoWire Feature ends
 
 
-// Implementing InjectRequestParameter or Requested Parameter Property Feature starts
-injectRequestParameterFeature();
-// Implementing InjectRequestParameter or Requested Parameter Property Feature ends
-
-
-
 // here code of injecting things or IOC starts
 
-
 if(mainService.getInjectApplicationDirectory())
-{
-try
 {
 if(applicationDirectory==null)
 {
@@ -749,32 +914,17 @@ applicationDirectory=new ApplicationDirectory(new File(path));
 }
 setterMethod=targetClass.getMethod("setApplicationDirectory",ApplicationDirectory.class);
 setterMethod.invoke(instantiationOfClass,applicationDirectory);
-}catch(Exception exception)
-{
-System.out.println("TMWebRock Found Exception either you are not write setter method or doing something wrong");
-System.out.println("Exception : "+exception.getMessage());
-}
 }
 if(mainService.getInjectApplicationScope())
-{
-try
 {
 if(applicationScope==null)
 {
 applicationScope=new ApplicationScope(servletContext);
 }
-// validation pending that setter method is present or not
 setterMethod=targetClass.getMethod("setApplicationScope",ApplicationScope.class);
 setterMethod.invoke(instantiationOfClass,applicationScope);
-}catch(Exception exception)
-{
-System.out.println("TMWebRock Found Exception either you are not write setter method or doing something wrong");
-System.out.println("Exception : "+exception.getMessage());
-}
 }
 if(mainService.getInjectSessionScope())
-{
-try
 {
 if(sessionScope==null)
 {
@@ -782,15 +932,8 @@ sessionScope=new SessionScope(httpSession);
 }
 setterMethod=targetClass.getMethod("setSessionScope",SessionScope.class);
 setterMethod.invoke(instantiationOfClass,sessionScope);
-}catch(Exception exception)
-{
-System.out.println("TMWebRock Found Exception either you are not write setter method or doing something wrong");
-System.out.println("Exception : "+exception.getMessage());
-}
 }
 if(mainService.getInjectRequestScope())
-{
-try
 {
 if(requestScope==null)
 {
@@ -798,17 +941,11 @@ requestScope=new RequestScope(request);
 }
 setterMethod=targetClass.getMethod("setRequestScope",RequestScope.class);
 setterMethod.invoke(instantiationOfClass,requestScope);
-}catch(Exception exception)
-{
-System.out.println("TMWebRock Found Exception either you are not write setter method or doing something wrong");
-System.out.println("Exception : "+exception.getMessage());
-}
 }
 // above code of injecting things or IOC ends
-// done done
+
+
 subService.invoke(instantiationOfClass,arguments);
-
-
 // here forward related code
 if(mainService.getForwardTo()!=null && mainService.getForwardTo().length()>0)
 {
@@ -817,6 +954,7 @@ System.out.println("Forwarding: "+request.getServletPath()+key.substring(0,key.i
 requestDispatcher=request.getRequestDispatcher(request.getServletPath()+key.substring(0,key.indexOf("/",1))+mainService.getForwardTo());
 requestDispatcher.forward(request,response);
 }
+
 }
 else
 {
@@ -830,15 +968,10 @@ RequestDispatcher requestDispatcher;
 requestDispatcher=request.getRequestDispatcher(serviceURL);
 requestDispatcher.forward(request,response);
 }
-
 }catch(Exception exception)
 {
-System.out.println("Exception got raised in DoGet");
+System.out.println("Exception got raised");
 System.out.println(exception);
 }
-
 } // doPost ends
-
 } // class ends
-
-
