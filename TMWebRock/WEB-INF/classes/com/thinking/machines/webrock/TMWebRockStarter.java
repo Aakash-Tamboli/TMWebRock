@@ -122,12 +122,17 @@ Class type=null;
 Parameter []parameter=null;
 List<RequestedParameter> requestedParameterList=null;
 List<RequestedParameterProperty> requestedParameterPropertyList=null;
+Guard guard=null;
+SecuredAccess securedAccess=null;
+Class guardClass=null;
+Method guardService=null;
 
 
 boolean injectApplicationDirectory=false;
 boolean injectApplicationScope=false;
 boolean injectSessionScope=false;
 boolean injectRequestScope=false;
+
 
 
 int objectCount=1; // DEBUGGING PUPOSE
@@ -205,6 +210,95 @@ isGetAllowed=false;
 }
 
 
+// Guard feature implementation starts for class level
+// validation required
+if(c.isAnnotationPresent(SecuredAccess.class))
+{
+
+// later on finalize the project we will break into components  hence following logic is repeating two time, where ?  see on method section
+securedAccess=(SecuredAccess)c.getAnnotation(SecuredAccess.class);
+String guardClassNameWithPackage=securedAccess.checkPost().trim();
+String []tmp=guardClassNameWithPackage.split("[.]"); // validation pending
+String guardClassName=tmp[tmp.length-1];  // validation pending
+
+// System.out.println("With Package: "+guardClassNameWithPackage);
+// System.out.println("Your Guard Class name is: "+guardClassName);
+
+try
+{
+System.out.println("Hi");
+guardClass=Class.forName(guardClassNameWithPackage);
+System.out.println("Bye");
+
+}catch(Exception exception)
+{
+System.out.println("Problem in your guard class name");
+System.out.println("Problem: "+exception.getMessage());
+}
+
+String guardClassService=securedAccess.guard().trim();
+
+System.out.println("Your Guard Class name is: "+guardClassService);
+
+try
+{
+
+for(Method gs: guardClass.getDeclaredMethods())
+{
+System.out.println(1);
+if(guardClassService.equalsIgnoreCase(gs.getName()))
+{
+System.out.println(2);
+Parameter []ps=gs.getParameters();
+boolean valid=true;
+System.out.println(3);
+for(int i=0;i<ps.length;i++)
+{
+System.out.println(4+i);
+if(
+!(
+ps[i].getType().equals(ApplicationDirectory.class) ||
+ps[i].getType().equals(ApplicationScope.class) ||
+ps[i].getType().equals(SessionScope.class) ||
+ps[i].getType().equals(RequestScope.class)
+)
+)
+{
+valid=false;
+break;
+}
+}
+if(valid) guardService=gs;
+System.out.println("Value of Valid: "+valid);
+break;
+}
+}
+
+System.out.println("RG Headphone");
+
+if(guardService==null) throw new Exception("Some serious mistake commit by bobby");
+if(guardService!=null) System.out.println("Colores and beauty");
+
+guard=new Guard(guardClass,guardService);
+
+
+
+}catch(Exception exception)
+{
+System.out.println("Problem un your guard method name");
+}
+}
+else
+{
+guard=null;
+}
+
+// Guard feature implementation ends for class level
+
+
+
+
+
 // method loop starts
 for(Method m: c.getDeclaredMethods())
 {
@@ -243,6 +337,7 @@ if(m.isAnnotationPresent(Path.class))
 path=m.getAnnotation(Path.class);
 str2=path.value();
 if(str2.length()==0) continue;
+if(str2.charAt(0)!='/') str2="/"+str2;
 if(c.isAnnotationPresent(GET.class)==false && c.isAnnotationPresent(POST.class)==false) // it means class level does not have niether @GET nor @POST so I have to check on method level
 {
 if(m.isAnnotationPresent(GET.class))
@@ -266,12 +361,84 @@ if(m.isAnnotationPresent(Forward.class))
 forward=m.getAnnotation(Forward.class);
 forwardTo=forward.value();
 if(forwardTo.length()==0) forwardTo=null;
+if(forwardTo.charAt(0)!='/') forwardTo="/"+forwardTo;
 }
+
+
+// Guard feature implementation For method level starts
+
+
+if(guard==null)
+{
+
+if(m.isAnnotationPresent(SecuredAccess.class))
+{
+
+// later on finalize the project we will break into components  hence following logic is repeating two time, where ?  see on class section
+securedAccess=(SecuredAccess)m.getAnnotation(SecuredAccess.class);
+String guardClassName=securedAccess.checkPost().trim();
+
+try
+{
+guardClass=Class.forName(guardClassName);
+}catch(Exception exception)
+{
+System.out.println("Problem in your guard class name");
+}
+
+String guardClassService=securedAccess.guard().trim();
+
+try
+{
+
+for(Method gs: guardClass.getDeclaredMethods())
+{
+if(guardClassService.equalsIgnoreCase(gs.getName()))
+{
+Parameter []ps=gs.getParameters();
+boolean valid=true;
+for(int i=0;i<ps.length;i++)
+{
+if(
+!(
+ps[i].equals(ApplicationDirectory.class) ||
+ps[i].equals(ApplicationScope.class) ||
+ps[i].equals(SessionScope.class) ||
+ps[i].equals(RequestScope.class)
+)
+)
+{
+valid=false;
+break;
+}
+}
+if(valid) guardService=gs;
+break;
+}
+}
+if(guardService==null) throw new Exception("Some serious mistake commit by bobby");
+guard=new Guard(guardClass,guardService);
+
+
+}catch(Exception exception)
+{
+System.out.println("Problem un your guard method name");
+}
+
+
+}
+else
+{
+guard=null;
+}
+}
+
+// Guard feature implementation for method level ends
+
+service=new Service(c,str+str2,forwardTo,m,isGetAllowed,isPostAllowed,false,priority,injectApplicationDirectory,injectApplicationScope,injectSessionScope,injectRequestScope,autoWiredList,requestedParameterList,requestedParameterPropertyList,false,guard);
 
 // Here I think check JSON feature implementation starts
 
-
-service=new Service(c,str+str2,forwardTo,m,isGetAllowed,isPostAllowed,false,priority,injectApplicationDirectory,injectApplicationScope,injectSessionScope,injectRequestScope,autoWiredList,requestedParameterList,requestedParameterPropertyList,false);
 
 if(parameter!=null)
 {
@@ -332,6 +499,8 @@ service.setIsJSONRequired(true); // it means according to docs only one paramete
 // Here I think check JSON feature implementation  ends
 
 
+
+
 System.out.println("---------------------"+objectCount+"---------------------");
 System.out.println("Service Object created with ");
 System.out.println("ClassName: "+c.getSimpleName());
@@ -372,7 +541,7 @@ System.out.println("Startup Service "+true);
 System.out.println("prioity No: "+priority);
 System.out.println("---------------------"+objectCount+"---------------------");
 objectCount++;
-service=new Service(c,"ONLY_FOR_STARTUP","ONLY_FOR_STARTUP",m,false,false,true,priority,injectApplicationDirectory,injectApplicationScope,injectSessionScope,injectRequestScope,autoWiredList,requestedParameterList,requestedParameterPropertyList,false);
+service=new Service(c,"ONLY_FOR_STARTUP","ONLY_FOR_STARTUP",m,false,false,true,priority,injectApplicationDirectory,injectApplicationScope,injectSessionScope,injectRequestScope,autoWiredList,requestedParameterList,requestedParameterPropertyList,false,null);
 startupList.add(service); // think about min-heap Aakash If Sir give you instruction you can implement it
 }
 }

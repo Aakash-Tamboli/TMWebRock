@@ -20,6 +20,7 @@ private List<AutoWiredWrapper> autoWired;
 private List<RequestedParameter> requestedParameterList;
 private List<RequestedParameterProperty> requestedParameterPropertyList;
 private boolean isJSONRequired;
+private Guard guard;
 
 // Sir say "It will be more in future so mentally prepared"
 // constructor starts
@@ -41,8 +42,9 @@ this.autoWired=null;
 this.requestedParameterList=null;
 this.requestedParameterPropertyList=null;
 this.isJSONRequired=false;
+this.guard=null;
 }
-public Service(Class serviceClass,String path,String forwardTo,Method service,boolean isGetAllowed,boolean isPostAllowed,boolean runOnStart,int priority,boolean injectApplicationDirectory,boolean injectApplicationScope,boolean injectSessionScope,boolean injectRequestScope,List<AutoWiredWrapper> autoWired,List<RequestedParameter> requestedParameterList,List<RequestedParameterProperty> requestedParameterPropertyList,boolean isJSONRequired)
+public Service(Class serviceClass,String path,String forwardTo,Method service,boolean isGetAllowed,boolean isPostAllowed,boolean runOnStart,int priority,boolean injectApplicationDirectory,boolean injectApplicationScope,boolean injectSessionScope,boolean injectRequestScope,List<AutoWiredWrapper> autoWired,List<RequestedParameter> requestedParameterList,List<RequestedParameterProperty> requestedParameterPropertyList,boolean isJSONRequired,Guard guard)
 {
 this.serviceClass=serviceClass;
 this.path=path;
@@ -60,6 +62,7 @@ this.autoWired=autoWired;
 this.requestedParameterList=requestedParameterList;
 this.requestedParameterPropertyList=requestedParameterPropertyList;
 this.isJSONRequired=isJSONRequired;
+this.guard=guard;
 }
 // constructor ends
 // setter starts
@@ -127,7 +130,10 @@ public void setIsJSONRequired(boolean isJSONRequired)
 {
 this.isJSONRequired=isJSONRequired;
 }
-
+public void setGuard(Guard guard)
+{
+this.guard=guard;
+}
 // setter ends
 // getter starts
 public Class getServiceClass()
@@ -193,6 +199,10 @@ return this.requestedParameterPropertyList;
 public boolean getIsJSONRequired()
 {
 return this.isJSONRequired;
+}
+public Guard getGuard()
+{
+return this.guard;
 }
 // getter ends
 }

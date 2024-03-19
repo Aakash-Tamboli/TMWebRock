@@ -3,56 +3,14 @@
 <head>
 <meta charset='utf-8'>
 <title>TMWebRock GET POST Recieving Testing</title>
-<script src='/jquery/jquery/jquery-3.7.1.min.js'></script>
-<script>
-
-$(()=>{
-
-$("#submit").click(()=>{
-let name=$("#nm").val();
-let age=$("#age").val();
-
-let obj={
-"name": name,
-"age": age
-};
-
-let jsonString=JSON.stringify(obj);
-
-alert(jsonString);
-
-
-$.post('/TMWebRock/school/student/add2',jsonString,(data,status)=>{
-alert(data);
-alert(status);
-})
-
-});
-});
-
-
-</script>
 </head>
 <body>
 <h1>Get Type Request</h1>
-<form method='GET' action='/TMWebRock/school/student/xxi'>
-name: &emsp; <input type='text' id='name' name='name'> <br>
-RollNumber: &emsp; <input type='text' id='roll' name='roll'> <br>
-<button type='submit'>Send Request</button>
+<!--  GET And POST Both Supported -->
+<form action='/TMWebRock/school/login/loginSessionActive' method='POST'>
+Username: &emsp; <input type='text'>
+Password: &emsp; <input type='text'>
+<button type='submit'>Login</button>
 </form>
-<hr>
-<hr>
-<h1>Post Type Request </h1>
-
-
-<form method='POST' action=''>
-
-Name: &emsp; <input type='text' id='nm'> <br>
-age: &emsp; <input type='text' id='age'> <br>
-<button type='button' id='submit'>Send Request</button>
-
-
-
-
 </body>
 </html>

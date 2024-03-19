@@ -11,7 +11,6 @@ import com.thinking.machines.webrock.pojo.*;
 import com.thinking.machines.webrock.scope.*;
 
 
-
 public class TMWebRock extends HttpServlet
 {
 private ServletContext servletContext;
@@ -21,6 +20,10 @@ private WebRockModel model;
 private Service mainService;
 private Class targetClass;
 private Object instantiationOfClass;
+private ApplicationDirectory applicationDirectory;
+private ApplicationScope applicationScope;
+private SessionScope sessionScope;
+private RequestScope requestScope;
 
 public TMWebRock()
 {
@@ -37,6 +40,10 @@ public void init(ServletConfig servletConfig) throws ServletException
 {
 this.servletContext=servletConfig.getServletContext();
 this.model=(WebRockModel)this.servletContext.getAttribute("dataStructure");
+String path=servletContext.getRealPath("/"); //https://stackoverflow.com/questions/12160639/what-does-servletcontext-getrealpath-mean-and-when-should-i-use-it
+this.applicationDirectory=new ApplicationDirectory(new File(path));
+this.applicationScope=new ApplicationScope(servletContext);
+this.sessionScope=new SessionScope(httpSession);
 }
 
 private Object getAppropriateValue(String val,Class type,boolean isAnnotationApplied)
@@ -232,6 +239,10 @@ return null;
 }
 }
 
+
+
+
+
 private Object[] requestParameterFeature() throws Exception
 {
 // RequestParameter implementation starts
@@ -258,12 +269,6 @@ if(requestedParameterList!=null)
 arguments=new Object[requestedParameterList.size()];
 System.out.println("Method have Number of arguments: "+requestedParameterList.size());
 
-
-path=servletContext.getRealPath("/"); //https://stackoverflow.com/questions/12160639/what-does-servletcontext-getrealpath-mean-and-when-should-i-use-it
-applicationDirectory=new ApplicationDirectory(new File(path));
-applicationScope=new ApplicationScope(servletContext);
-sessionScope=new SessionScope(httpSession);
-requestScope=new RequestScope(request);
 
 for(int i=0;i<requestedParameterList.size();i++)
 {
@@ -325,6 +330,8 @@ arguments[i]=getAppropriateValue(val,type,requestedParameter.getIsAnnotationAppl
 
 } // loop ends
 } // prepare arguments for invoking
+
+System.out.println(1010101);
 return arguments;
 }
 
@@ -385,6 +392,7 @@ try
 // servletContext=request.getServletContext(); no need
 this.httpSession=request.getSession();
 this.request=request;
+this.requestScope=new RequestScope(request);
 // Container fetching ends
 
 // variable Declaration starts
@@ -408,6 +416,13 @@ List<RequestedParameter> requestedParameterList=null;
 List<RequestedParameterProperty> requestedParameterPropertyList=null;
 Object []arguments=null;
 RequestedParameter requestedParameter=null;
+SecurityException securityException=null;
+
+Object instantiationOfGuardClass=null;
+Guard guard=null;
+Method guardService=null;
+Parameter []guardParameters=null;
+
 
 // varaible Declarration ends
 
@@ -417,6 +432,7 @@ System.out.println("DEBUG: "+request.getPathInfo());
 System.out.println("DEBUG: model size: "+model.dataStructure.size());
 
 key=request.getPathInfo();
+System.out.println("value of key: "+key);
 serviceURL=key.substring(key.indexOf("/",1));
 System.out.println("Service URL: "+serviceURL);
 
@@ -432,10 +448,46 @@ System.out.println("[doGet] RequestType : "+mainService.getIsGetAllowed());
 
 if(mainService.getIsGetAllowed() && serviceURL.equalsIgnoreCase(anotherServiceURL) )
 {
-
 targetClass=mainService.getServiceClass();
 subService=mainService.getService();
 instantiationOfClass=targetClass.newInstance();
+
+// checking security Guard starts
+
+if(mainService.getGuard()!=null)
+{
+
+System.out.println("Get Guard ackslmkcsamksacmkcsam");
+
+guard=mainService.getGuard();
+
+try
+{
+instantiationOfGuardClass=guard.getGuardClass().newInstance();
+guardService=guard.getGuardService();
+
+guardParameters=guardService.getParameters();
+arguments=new Object[guardParameters.length]; // validation later on , what if bobby Method does not have anything but I think I checked in starter but you will see later on
+
+for(int i=0;i<guardParameters.length;i++)
+{
+if(guardParameters[i].equals(ApplicationDirectory.class)) arguments[i]=applicationDirectory;
+else if(guardParameters[i].equals(ApplicationScope.class)) arguments[i]=applicationScope;
+else if(guardParameters[i].equals(SessionScope.class)) arguments[i]=sessionScope;
+else if(guardParameters[i].equals(RequestScope.class)) arguments[i]=requestScope;
+}
+
+guardService.invoke(instantiationOfGuardClass,arguments);
+}catch(InvocationTargetException invocationTargetException)
+{
+System.out.println("Thinking + Hardwork = Success");
+if(invocationTargetException.getCause() instanceof SecurityException) securityException=(SecurityException)invocationTargetException.getCause();
+response.sendError(response.SC_NOT_FOUND,securityException.getMessage());
+return;
+}
+
+}
+// checking security Guard ends
 
 // JSON feature starts
 try
@@ -445,13 +497,15 @@ arguments=requestParameterFeature();
 {
 System.out.println("Unable to parse JSON data into your parameters, please reffer docs for rectify your mistake");
 System.out.println("Problem: "+exception.getMessage());
+response.sendError(response.SC_INTERNAL_SERVER_ERROR,"Unable to parse JSON data into your parameters, please reffer docs for rectify your mistake");
 return;
 }
 
-System.out.println("Hioiiiiiiiiiiiiiiiiiiiiiiiiiiiii");
 
 
 // JSON feature ends
+
+
 
 // implementing AutoWire Feature starts
 autoWiredList=mainService.getAutoWired();
@@ -573,8 +627,15 @@ System.out.println("Exception : "+exception.getMessage());
 }
 }
 // above code of injecting things or IOC ends
-// done done
+try
+{
 subService.invoke(instantiationOfClass,arguments);
+}catch(InvocationTargetException invocationTargetException)
+{
+System.out.println("Method not invoked: "+invocationTargetException.getCause().getMessage());
+response.sendError(response.SC_INTERNAL_SERVER_ERROR,invocationTargetException.getCause().getMessage());
+return;
+}
 
 
 // here forward related code
@@ -639,6 +700,9 @@ List<RequestedParameter> requestedParameterList=null;
 List<RequestedParameterProperty> requestedParameterPropertyList=null;
 Object []arguments=null;
 RequestedParameter requestedParameter=null;
+Guard guard=null;
+SecurityException securityException=null;
+
 
 // varaible Declarration ends
 
@@ -668,6 +732,45 @@ if(mainService.getIsPostAllowed() && serviceURL.equalsIgnoreCase(anotherServiceU
 targetClass=mainService.getServiceClass();
 subService=mainService.getService();
 instantiationOfClass=targetClass.newInstance();
+
+// checking security Guard starts
+
+if(mainService.getGuard()!=null)
+{
+
+System.out.println("Get Guard ackslmkcsamksacmkcsam");
+
+guard=mainService.getGuard();
+
+try
+{
+Object instantiationOfGuardClass=guard.getGuardClass().newInstance();
+Method guardService=guard.getGuardService();
+
+Parameter []guardParameters=guardService.getParameters();
+arguments=new Object[guardParameters.length]; // validation later on , what if bobby Method does not have anything but I think I checked in starter but you will see later on
+
+for(int i=0;i<guardParameters.length;i++)
+{
+if(guardParameters[i].equals(ApplicationDirectory.class)) arguments[i]=applicationDirectory;
+else if(guardParameters[i].equals(ApplicationScope.class)) arguments[i]=applicationScope;
+else if(guardParameters[i].equals(SessionScope.class)) arguments[i]=sessionScope;
+else if(guardParameters[i].equals(RequestScope.class)) arguments[i]=requestScope;
+}
+
+guardService.invoke(instantiationOfGuardClass,arguments);
+}catch(InvocationTargetException invocationTargetException)
+{
+System.out.println("Thinking + Hardwork = Success");
+if(invocationTargetException.getCause() instanceof SecurityException) securityException=(SecurityException)invocationTargetException.getCause();
+response.sendError(response.SC_NOT_FOUND,securityException.getMessage());
+return;
+}
+
+}
+// checking security Guard ends
+
+
 
 // JSON feature starts
 try
@@ -805,9 +908,14 @@ System.out.println("Exception : "+exception.getMessage());
 }
 }
 // above code of injecting things or IOC ends
-// done done
+try
+{
 subService.invoke(instantiationOfClass,arguments);
-
+}catch(InvocationTargetException invocationTargetException)
+{
+response.sendError(response.SC_INTERNAL_SERVER_ERROR,invocationTargetException.getCause().getMessage());
+return;
+}
 
 // here forward related code
 if(mainService.getForwardTo()!=null && mainService.getForwardTo().length()>0)
@@ -840,5 +948,3 @@ System.out.println(exception);
 } // doPost ends
 
 } // class ends
-
-
