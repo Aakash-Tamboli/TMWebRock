@@ -16,6 +16,7 @@ public class TMWebRock extends HttpServlet
 private ServletContext servletContext;
 private HttpSession httpSession;
 private HttpServletRequest request;
+private HttpServletResponse response;
 private WebRockModel model;
 private Service mainService;
 private Class targetClass;
@@ -330,8 +331,7 @@ arguments[i]=getAppropriateValue(val,type,requestedParameter.getIsAnnotationAppl
 
 } // loop ends
 } // prepare arguments for invoking
-
-System.out.println(1010101);
+System.out.println("-----------DEBUG REQUESTPARAMETER FEATURE----------");
 return arguments;
 }
 
@@ -383,6 +383,22 @@ System.out.println("Problem is: "+exception.getMessage());
 // Implementing InjectRequestParameter or Requested Parameter Property Feature ends
 }
 
+private void sendReturnedValue(Object returnedValue) throws Exception
+{
+try
+{
+PrintWriter out=this.response.getWriter();
+this.response.setContentType("Application/json");
+Gson gson=new Gson();
+String tmp=gson.toJson(returnedValue);
+out.println(tmp);
+out.flush();
+}catch(Exception exception)
+{
+System.out.println("Facing Exception while sending returned thing of serive to client");
+throw exception;
+}
+}
 
 public void doGet(HttpServletRequest request,HttpServletResponse response)
 {
@@ -392,6 +408,7 @@ try
 // servletContext=request.getServletContext(); no need
 this.httpSession=request.getSession();
 this.request=request;
+this.response=response;
 this.requestScope=new RequestScope(request);
 // Container fetching ends
 
@@ -627,18 +644,40 @@ System.out.println("Exception : "+exception.getMessage());
 }
 }
 // above code of injecting things or IOC ends
+
+
 try
 {
+if(mainService.getIsServiceReturns()==true)
+{
+Object returnedValue=subService.invoke(instantiationOfClass,arguments);
+sendReturnedValue(returnedValue);
+}
+else
+{
 subService.invoke(instantiationOfClass,arguments);
+}
+
 }catch(InvocationTargetException invocationTargetException)
 {
+if(invocationTargetException.getCause() instanceof SecurityException)
+{
+securityException=(SecurityException)invocationTargetException.getCause();
 System.out.println("Method not invoked: "+invocationTargetException.getCause().getMessage());
-response.sendError(response.SC_INTERNAL_SERVER_ERROR,invocationTargetException.getCause().getMessage());
+}
+response.sendError(response.SC_INTERNAL_SERVER_ERROR,securityException.getMessage());
+return;
+}catch(Exception exception)
+{
+System.out.println("While Invoking service: subService.invoke(-/-) I got exception");
+System.out.println("Problem: "+exception.getMessage());
+response.sendError(response.SC_INTERNAL_SERVER_ERROR,securityException.getMessage());
 return;
 }
 
-
 // here forward related code
+
+
 if(mainService.getForwardTo()!=null && mainService.getForwardTo().length()>0)
 {
 RequestDispatcher requestDispatcher;
@@ -646,25 +685,27 @@ System.out.println("Forwarding: "+request.getServletPath()+key.substring(0,key.i
 requestDispatcher=request.getRequestDispatcher(request.getServletPath()+key.substring(0,key.indexOf("/",1))+mainService.getForwardTo());
 requestDispatcher.forward(request,response);
 }
+
 }
 else
 {
-if(serviceURL.equalsIgnoreCase(anotherServiceURL)==false) response.sendError(HttpServletResponse.SC_FOUND);
-else response.sendError(HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+response.sendError(HttpServletResponse.SC_METHOD_NOT_ALLOWED);
 }
 }
 else
 {
 RequestDispatcher requestDispatcher;
 requestDispatcher=request.getRequestDispatcher(serviceURL);
-requestDispatcher.forward(request,response);
+requestDispatcher.forward(request,response);  
 }
 
 }catch(Exception exception)
 {
-System.out.println("Exception got raised in Do Get");
+System.out.println("Final Exception Block in doGet");
 System.out.println(exception);
 }
+
+
 } // doGet ends
 
 
@@ -908,12 +949,33 @@ System.out.println("Exception : "+exception.getMessage());
 }
 }
 // above code of injecting things or IOC ends
+
 try
 {
+if(mainService.getIsServiceReturns()==true)
+{
+Object returnedValue=subService.invoke(instantiationOfClass,arguments);
+sendReturnedValue(returnedValue);
+}
+else
+{
 subService.invoke(instantiationOfClass,arguments);
+}
+
 }catch(InvocationTargetException invocationTargetException)
 {
-response.sendError(response.SC_INTERNAL_SERVER_ERROR,invocationTargetException.getCause().getMessage());
+if(invocationTargetException.getCause() instanceof SecurityException)
+{
+securityException=(SecurityException)invocationTargetException.getCause();
+System.out.println("Method not invoked: "+invocationTargetException.getCause().getMessage());
+}
+response.sendError(response.SC_INTERNAL_SERVER_ERROR,securityException.getMessage());
+return;
+}catch(Exception exception)
+{
+System.out.println("While Invoking service: subService.invoke(-/-) I got exception");
+System.out.println("Problem: "+exception.getMessage());
+response.sendError(response.SC_INTERNAL_SERVER_ERROR,securityException.getMessage());
 return;
 }
 
@@ -925,12 +987,13 @@ System.out.println("Forwarding: "+request.getServletPath()+key.substring(0,key.i
 requestDispatcher=request.getRequestDispatcher(request.getServletPath()+key.substring(0,key.indexOf("/",1))+mainService.getForwardTo());
 requestDispatcher.forward(request,response);
 }
+
 }
 else
 {
-if(serviceURL.equalsIgnoreCase(anotherServiceURL)==false) response.sendError(HttpServletResponse.SC_FOUND);
-else response.sendError(HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+response.sendError(HttpServletResponse.SC_METHOD_NOT_ALLOWED);
 }
+
 }
 else
 {

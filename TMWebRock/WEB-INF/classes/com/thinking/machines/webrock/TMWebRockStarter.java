@@ -132,7 +132,7 @@ boolean injectApplicationDirectory=false;
 boolean injectApplicationScope=false;
 boolean injectSessionScope=false;
 boolean injectRequestScope=false;
-
+boolean isServiceReturns=false;
 
 
 int objectCount=1; // DEBUGGING PUPOSE
@@ -302,6 +302,10 @@ guard=null;
 // method loop starts
 for(Method m: c.getDeclaredMethods())
 {
+// analysis of return type starts
+if(m.getReturnType().equals(void.class)==false) isServiceReturns=true;
+else isServiceReturns=false;
+// analysis of return type ends
 
 // Analysis of Parameter in Method starts
 
@@ -435,7 +439,7 @@ guard=null;
 
 // Guard feature implementation for method level ends
 
-service=new Service(c,str+str2,forwardTo,m,isGetAllowed,isPostAllowed,false,priority,injectApplicationDirectory,injectApplicationScope,injectSessionScope,injectRequestScope,autoWiredList,requestedParameterList,requestedParameterPropertyList,false,guard);
+service=new Service(c,str+str2,forwardTo,m,isServiceReturns,isGetAllowed,isPostAllowed,false,priority,injectApplicationDirectory,injectApplicationScope,injectSessionScope,injectRequestScope,autoWiredList,requestedParameterList,requestedParameterPropertyList,false,guard);
 
 // Here I think check JSON feature implementation starts
 
@@ -507,6 +511,7 @@ System.out.println("ClassName: "+c.getSimpleName());
 System.out.println("Full Path of service: "+str+str2);
 System.out.println("Serivce Forward To: "+forwardTo);
 System.out.println("Method which considerd as service: "+m.getName());
+System.out.println("Is This Service returns: "+isServiceReturns);
 System.out.println("For This Service GET ALLOWED: "+isGetAllowed);
 System.out.println("For This Service POST ALLOwED: "+isPostAllowed);
 System.out.println("Startup Service "+false);
@@ -541,7 +546,7 @@ System.out.println("Startup Service "+true);
 System.out.println("prioity No: "+priority);
 System.out.println("---------------------"+objectCount+"---------------------");
 objectCount++;
-service=new Service(c,"ONLY_FOR_STARTUP","ONLY_FOR_STARTUP",m,false,false,true,priority,injectApplicationDirectory,injectApplicationScope,injectSessionScope,injectRequestScope,autoWiredList,requestedParameterList,requestedParameterPropertyList,false,null);
+service=new Service(c,"ONLY_FOR_STARTUP","ONLY_FOR_STARTUP",m,false,false,false,true,priority,injectApplicationDirectory,injectApplicationScope,injectSessionScope,injectRequestScope,autoWiredList,requestedParameterList,requestedParameterPropertyList,false,null);
 startupList.add(service); // think about min-heap Aakash If Sir give you instruction you can implement it
 }
 }

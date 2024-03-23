@@ -8,6 +8,7 @@ private Class serviceClass;
 private String path;
 private String forwardTo;
 private Method service;
+private boolean isServiceReturns;
 private boolean isGetAllowed;
 private boolean isPostAllowed;
 private boolean runOnStartup;
@@ -30,6 +31,7 @@ this.serviceClass=null;
 this.path="";
 this.forwardTo=null;
 this.service=null;
+this.isServiceReturns=false;
 this.isGetAllowed=false;
 this.isPostAllowed=false;
 this.runOnStartup=false;
@@ -44,12 +46,13 @@ this.requestedParameterPropertyList=null;
 this.isJSONRequired=false;
 this.guard=null;
 }
-public Service(Class serviceClass,String path,String forwardTo,Method service,boolean isGetAllowed,boolean isPostAllowed,boolean runOnStart,int priority,boolean injectApplicationDirectory,boolean injectApplicationScope,boolean injectSessionScope,boolean injectRequestScope,List<AutoWiredWrapper> autoWired,List<RequestedParameter> requestedParameterList,List<RequestedParameterProperty> requestedParameterPropertyList,boolean isJSONRequired,Guard guard)
+public Service(Class serviceClass,String path,String forwardTo,Method service,boolean isServiceReturns,boolean isGetAllowed,boolean isPostAllowed,boolean runOnStart,int priority,boolean injectApplicationDirectory,boolean injectApplicationScope,boolean injectSessionScope,boolean injectRequestScope,List<AutoWiredWrapper> autoWired,List<RequestedParameter> requestedParameterList,List<RequestedParameterProperty> requestedParameterPropertyList,boolean isJSONRequired,Guard guard)
 {
 this.serviceClass=serviceClass;
 this.path=path;
 this.forwardTo=forwardTo;
 this.service=service;
+this.isServiceReturns=isServiceReturns;
 this.isGetAllowed=isGetAllowed;
 this.isPostAllowed=isPostAllowed;
 this.runOnStartup=runOnStartup;
@@ -81,6 +84,10 @@ this.forwardTo=forwardTo;
 public void setService(Method method)
 {
 this.service=service;
+}
+public void setIsServiceReturns(boolean isServiceReturns)
+{
+this.isServiceReturns=isServiceReturns;
 }
 public void setIsGetAllowed(boolean isGetAllowed)
 {
@@ -151,6 +158,10 @@ return this.forwardTo;
 public Method getService()
 {
 return this.service;
+}
+public boolean getIsServiceReturns()
+{
+return this.isServiceReturns;
 }
 public boolean getIsGetAllowed()
 {

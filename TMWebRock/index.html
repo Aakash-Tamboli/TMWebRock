@@ -3,14 +3,154 @@
 <head>
 <meta charset='utf-8'>
 <title>TMWebRock GET POST Recieving Testing</title>
+<script src='/jquery/jquery/jquery-3.7.1.min.js'></script>
+<link rel="stylesheet" href="//cdn.datatables.net/2.0.3/css/dataTables.dataTables.min.css">
+<script src="//cdn.datatables.net/2.0.3/js/dataTables.min.js"></script>
+
+<script>
+class Student
+{
+constructor(rollNumber,name,gender)
+{
+this.rollNumber=rollNumber;
+this.name=name;
+this.gender=gender;
+}
+}
+
+class StudentService
+{
+addStudent(student)
+{
+let promise=new Promise((resolve,reject)=>{
+
+$.ajax({
+url: "/TMWebRock/school/studentService/addStudent",
+type: "POST",
+data: JSON.stringify(student),
+success: resolve,
+error: reject
+});
+});
+return promise;
+}
+
+updateStudent()
+{
+
+}
+deleteStudent()
+{
+
+}
+getByRollNumber()
+{
+
+}
+getAll()
+{
+let promise=new Promise((resolve,reject)=>{
+$.ajax({
+url: "/TMWebRock/school/studentService/getAllStudent",
+success: resolve,
+error: reject
+});
+});
+return promise;
+}
+}
+
+// ------------------------------------------
+function getAllStudent()
+{
+let promise=new StudentService().getAll();
+promise.then((data)=>{
+
+$('#studentTable tbody').empty();
+
+$.each(data, function(index, item) {
+var row = '<tr>' +'<td>' + item.rollNumber + '</td>' +'<td>' + item.name + '</td>' +'<td>' + item.gender + '</td>' +'</tr>';
+$('#studentTable tbody').append(row);
+});
+
+},(error)=>{
+alert("fail");
+alert(error);
+});
+}
+
+
+
+function addStudent()
+{
+let name=$("#addName").val();
+// alert(name);
+let gender=$("input[name='addGender']:checked").val();
+// alert(gender);
+let student=new Student(0,name.trim(),gender.trim());
+let promise=new StudentService().addStudent(student);
+promise.then((done)=>{
+alert("Student");
+},(error)=>{
+alert("error");
+});
+}
+</script>
 </head>
 <body>
-<h1>Get Type Request</h1>
-<!--  GET And POST Both Supported -->
-<form action='/TMWebRock/school/login/loginSessionActive' method='POST'>
-Username: &emsp; <input type='text'>
-Password: &emsp; <input type='text'>
-<button type='submit'>Login</button>
-</form>
+<h1>Student Application</h1>
+<h2>This is Demo appliation validation not applied here</h2>
+
+<hr>
+<table id="studentTable" class="display">
+    <thead>
+        <tr>
+            <th>RollNumber</th>
+            <th>Name</th>
+            <th>Gender</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+
+        </tr>
+    </tbody>
+</table>
+<button type='button' onclick='getAllStudent()'>GetAllStudents</button>
+<hr>
+
+
+<hr>
+<h1>Student Add Module</h1>
+name: &emsp; <input type='text' id='addName' > <br> <br>
+gender: &emsp; 
+<input type='radio' name='addGender' value='M' checked > Male &emsp;
+<input type='radio' name='addGender' value='F'> Female <br>
+<br>
+<button type='button' onclick='addStudent()'>Next</button>
+<hr>
+
+
+<hr>
+<h1>Student Update Module</h1>
+RollNumber: &emsp; <input type='text' id='updateRollNumber'> <br> <br>
+name: &emsp; <input type='text' id='updateName' > <br> <br>
+gender: &emsp; 
+<input type='radio' name='updateGender' value='M' checked > Male &emsp;
+<input type='radio' name='updateGender' value='F'> Female <br>
+<br>
+<button onclick='updateStudent()'>Next</button>
+<hr>
+
+<hr>
+<h1>Student Delete Module</h1>
+RollNumber: &emsp; <input type='text' id='deleteRollNumber'> <br> <br>
+<button onclick='updateStudent()'>Next</button>
+<hr>
+
+
+
+
+
 </body>
 </html>
