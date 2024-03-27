@@ -1,5 +1,8 @@
 package bobby.test;
+import com.thinking.machines.webrock.annotations.*;
 
+
+@SendPOJOToClient
 public class Student implements java.io.Serializable
 {
 private int rollNumber;

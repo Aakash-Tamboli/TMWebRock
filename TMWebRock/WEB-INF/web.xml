@@ -15,6 +15,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
+
 <web-app xmlns="http://xmlns.jcp.org/xml/ns/javaee"
   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
   xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/javaee
@@ -44,8 +45,20 @@
 <param-name>SERVICE_PACKAGE_PREFIX</param-name>
 <param-value>bobby</param-value>
 </init-param>
+<init-param>
+<param-name>JSFILE</param-name>
+<param-value>abcd.js</param-value>
+</init-param>
 </servlet>
 
+<servlet>
+<servlet-name>ServingJSFile</servlet-name>
+<servlet-class>com.thinking.machines.webrock.ServingJSFile</servlet-class>
+</servlet>
+<servlet-mapping>
+<servlet-name>ServingJSFile</servlet-name>
+<url-pattern>/jsFile/*</url-pattern>
+</servlet-mapping>
 <!--This is writtern by Amit ends -->
 
 

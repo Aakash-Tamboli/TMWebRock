@@ -5,12 +5,26 @@ import com.thinking.machines.webrock.model.*;
 import com.thinking.machines.webrock.annotations.*;
 import com.thinking.machines.webrock.scope.*;
 import com.thinking.machines.webrock.pojo.*;
+import com.thinking.machines.webrock.util.*;
 import java.lang.reflect.*;
 import java.io.*;
 import java.util.*;
 
 public class TMWebRockStarter extends HttpServlet
 {
+private boolean DELETE_PREVIOUSLY_GENERATED_JSFILE;
+private String JSFILENAME;
+private String PREFIX;
+private ServletContext servletContext;
+
+private List<AutoWiredWrapper> autoWiredList;
+private List<RequestedParameterProperty> requestedParameterPropertyList;
+private Guard guard;
+private Class guardClass;
+private Method guardService;
+
+
+
 
 private void dealingWithStartupServices(List<Service> startupList)
 {
@@ -69,7 +83,7 @@ System.out.println(exception);
 }
 }
 
-private List<String> findAllClassesName(String knownFact,String prefix)
+private List<String> processToFindAllClassesName(String knownFact)
 {
 File file=new File(knownFact);
 Stack<File> stack=new Stack<>();
@@ -86,7 +100,7 @@ str=file.getName();
 if(str.substring(str.length()-6).equals(".class"))
 {
 str=file.getAbsolutePath().replaceAll(File.separator,".");
-str=str.substring(str.indexOf(prefix));
+str=str.substring(str.indexOf(PREFIX));
 str=str.substring(0,str.length()-6);
 list.add(str);
 }
@@ -100,7 +114,335 @@ for(File f1: f) stack.push(f1);
 return list;
 }
 
-private List<Service> populateNecessaryDS(List<String> list,ServletConfig servletConfig)
+private String processOfGeneratingPOJOForJS(Class c)
+{
+String buffer="";
+
+buffer=buffer+"class "+c.getSimpleName()+"{\n";
+Field []fields=c.getDeclaredFields();
+if(fields!=null && fields.length!=0)
+{
+// I know POJO Generally contains props. and respective getter and setter I know \n does not effect on js code but still for clearty
+buffer=buffer+"constructor(";
+for(int i=0;i<fields.length;i++)
+{
+buffer=buffer+fields[i].getName();
+if(i+1!=fields.length) buffer=buffer+",";
+}
+buffer=buffer+"){\n";
+for(int i=0;i<fields.length;i++) buffer=buffer+"this."+fields[i].getName()+"="+fields[i].getName()+";\n";
+buffer=buffer+"}\n";
+
+for(int i=0;i<fields.length;i++)
+{
+buffer=buffer+"set"+StringUtility.capitalize(fields[i].getName())+"("+fields[i].getName()+"){\n";
+buffer=buffer+"this."+fields[i].getName()+"="+fields[i].getName()+";\n";
+buffer=buffer+"}\n";
+}
+}
+
+buffer=buffer+"}\n"; // js class braces
+
+return buffer;
+}
+
+private String processOfGeneratingPOJOServiceForJS(Class c)
+{
+String buffer="";
+RequestParameter requestParamerter=null;
+
+if(c.isAnnotationPresent(Path.class)==false) return ""; // I try independent each module as much as possible
+Path p1=(Path)c.getAnnotation(Path.class);
+String mainServicePath=p1.value().trim();
+if(mainServicePath==null && mainServicePath.length()==0) return "";
+if((mainServicePath.charAt(0)=='/')==false) mainServicePath="/"+mainServicePath;
+
+buffer=buffer+"class "+c.getSimpleName()+"{\n";
+
+
+Method []methods=c.getDeclaredMethods();
+
+if(methods!=null && methods.length!=0)
+{
+// POJO Service generally contains the methods which act like API between dl and pl/bl hence I assume it only contains methods and logic which is slightly change for JS POJO Service because it returns promise.
+// validation critera while writing algo.
+// class and method both should have path annoation applied
+String tmpBuffer="";
+String subServicePath="";
+Parameter []parameters=null;
+String requestParameterValue="UNABLE TO RETERVE";
+
+for(int i=0;i<methods.length;i++)
+{
+if(methods[i].isAnnotationPresent(Path.class))
+{
+p1=(Path)methods[i].getAnnotation(Path.class);
+subServicePath=p1.value().trim();
+if(subServicePath==null || subServicePath.length()==0) continue;
+if((subServicePath.charAt(0)=='/')==false) subServicePath="/"+subServicePath;
+tmpBuffer=tmpBuffer+methods[i].getName()+"(";
+parameters=methods[i].getParameters();
+
+
+if(parameters!=null && parameters.length!=0)
+{
+tmpBuffer=tmpBuffer+StringUtility.uncapitalize(parameters[0].getType().getSimpleName());
+} // parameter part ends
+tmpBuffer=tmpBuffer+"){\n";
+
+
+
+tmpBuffer=tmpBuffer+"let promise=new Promise((resolve,reject)=>{\n";
+tmpBuffer=tmpBuffer+"let address='/TMWebRock/school/"+StringUtility.uncapitalize(c.getSimpleName())+subServicePath+"';\n";
+
+if(methods[i].isAnnotationPresent(GET.class))
+{
+tmpBuffer=tmpBuffer+"let methodType='GET';\n";
+if(parameters!=null && parameters.length!=0)
+{
+if(parameters[0].isAnnotationPresent(RequestParameter.class)) 
+{
+requestParameterValue=parameters[0].getAnnotation(RequestParameter.class).value().trim();
+}
+tmpBuffer=tmpBuffer+"let dataToBeSend='"+requestParameterValue+"='+"+StringUtility.uncapitalize(parameters[0].getType().getSimpleName())+";\n";
+}
+else
+{
+tmpBuffer=tmpBuffer+"let dataToBeSend='';\n";
+}
+}
+else
+{
+tmpBuffer=tmpBuffer+"let methodType='POST';\n";
+tmpBuffer=tmpBuffer+"let dataToBeSend=JSON.stringify("+StringUtility.uncapitalize(parameters[0].getType().getSimpleName())+");\n";
+}
+
+
+
+tmpBuffer=tmpBuffer+"$.ajax({\n";
+tmpBuffer=tmpBuffer+"url: address,\n";
+tmpBuffer=tmpBuffer+"type: methodType,\n";
+tmpBuffer=tmpBuffer+"data: dataToBeSend,\n";
+tmpBuffer=tmpBuffer+"success: resolve,\n";
+tmpBuffer=tmpBuffer+"error: reject\n";
+tmpBuffer=tmpBuffer+"});\n";
+
+
+tmpBuffer=tmpBuffer+"});\n";
+tmpBuffer=tmpBuffer+"return promise;\n";
+tmpBuffer=tmpBuffer+"}\n";
+} // validation
+}// loop ends
+buffer=buffer+tmpBuffer;
+} // if ends
+
+
+buffer=buffer+"}\n";
+
+return buffer;
+}
+
+private void processOfClassIntoJSFile(Class c)
+{
+String jsContent;
+String jsPath=servletContext.getRealPath(".")+File.separator+"WEB-INF"+File.separator+"js";
+File file=new File(jsPath);
+if(file.exists()==false)
+{
+if(file.mkdir()==false)
+{
+// Ideally later on I will create Exception then it may be generate exception to server window
+}
+else
+{
+file.setReadable(true);
+file.setWritable(true);
+}
+}
+
+jsPath=jsPath+File.separator+JSFILENAME;
+
+file=new File(jsPath);
+
+if(file.exists() && DELETE_PREVIOUSLY_GENERATED_JSFILE==false)
+{
+file.delete();
+DELETE_PREVIOUSLY_GENERATED_JSFILE=true;
+}
+
+
+if(c.isAnnotationPresent(SendPOJOToClient.class)) jsContent=processOfGeneratingPOJOForJS(c);
+else jsContent=processOfGeneratingPOJOServiceForJS(c);
+
+
+System.out.println("------------------------ START ----------------");
+
+System.out.println("\n\n\n"+jsContent+"\n\n\n");
+
+System.out.println("------------------------ END ----------------");
+
+RandomAccessFile randomAccessFile=null;
+try
+{
+randomAccessFile=new RandomAccessFile(file,"rw");
+randomAccessFile.seek(randomAccessFile.length());
+randomAccessFile.writeBytes(jsContent);
+randomAccessFile.writeBytes("\n");
+randomAccessFile.close();
+}catch(Exception exception)
+{
+// Ideally later on I will create Exception then it may be generate exception to server window
+}
+}
+
+
+private void processToEvaluateAutoWiredListAndInjectRequestParameter(Class c)
+{
+// analyzing property of framework user starts
+Field []props=null;
+Field property=null;
+String name="";
+String key="";
+Class type=null;
+
+props=c.getDeclaredFields();
+
+autoWiredList=null;
+requestedParameterPropertyList=null;
+
+if(props!=null && props.length!=0)
+{
+autoWiredList=new ArrayList<>();
+requestedParameterPropertyList=new ArrayList<>();
+
+for(int i=0;i<props.length;i++)
+{
+if(props[i].isAnnotationPresent(AutoWired.class))
+{
+// validation pending
+property=props[i];
+name=props[i].getAnnotation(AutoWired.class).name();
+type=props[i].getType();
+autoWiredList.add(new AutoWiredWrapper(property,name,type));
+}
+else if(props[i].isAnnotationPresent(InjectRequestParameter.class))
+{
+key=props[i].getAnnotation(InjectRequestParameter.class).value();
+if(key==null || key.length()==0) continue; // if user not giving key then why should I kept on my ds
+type=props[i].getType();
+name=props[i].getName();
+requestedParameterPropertyList.add(new RequestedParameterProperty(type,key,name));
+}
+} // loop ends
+
+// Why Should I keep empty list in my Service Class object that's why I null them 
+if(autoWiredList.size()==0) autoWiredList=null;
+if(requestedParameterPropertyList.size()==0) requestedParameterPropertyList=null;
+
+} // scanning props of Class
+// analyzing property of framework user ends
+}
+
+
+
+private void processToEvaluateGuardFeature(Class c)
+{
+SecuredAccess securedAccess=null;
+String guardClassNameWithPackage="";
+String []tmp=null;
+String guardClassName="";
+String guardClassService="";
+Parameter []ps=null;
+boolean valid=false;
+
+
+// Guard feature implementation starts for class level
+// validation required
+if(c.isAnnotationPresent(SecuredAccess.class))
+{
+// later on finalize the project we will break into components  hence following logic is repeating two time, where ?  see on method section
+securedAccess=(SecuredAccess)c.getAnnotation(SecuredAccess.class);
+
+guardClassNameWithPackage=securedAccess.checkPost().trim();
+
+tmp=guardClassNameWithPackage.split("[.]"); // validation pending
+
+guardClassName=tmp[tmp.length-1];  // validation pending
+
+// System.out.println("With Package: "+guardClassNameWithPackage);
+// System.out.println("Your Guard Class name is: "+guardClassName);
+
+try
+{
+// System.out.println("Hi");
+guardClass=Class.forName(guardClassNameWithPackage);
+// System.out.println("Bye");
+}catch(Exception exception)
+{
+System.out.println("Problem in your guard class name");
+System.out.println("Problem: "+exception.getMessage());
+}
+
+guardClassService=securedAccess.guard().trim();
+
+// System.out.println("Your Guard Class name is: "+guardClassService);
+
+try
+{
+
+for(Method gs: guardClass.getDeclaredMethods())
+{
+// System.out.println(1);
+if(guardClassService.equalsIgnoreCase(gs.getName()))
+{
+// System.out.println(2);
+ps=gs.getParameters();
+valid=true;
+// System.out.println(3);
+for(int i=0;i<ps.length;i++)
+{
+// System.out.println(4+i);
+if(
+!(
+ps[i].getType().equals(ApplicationDirectory.class) ||
+ps[i].getType().equals(ApplicationScope.class) ||
+ps[i].getType().equals(SessionScope.class) ||
+ps[i].getType().equals(RequestScope.class)
+)
+)
+{
+valid=false;
+break;
+}
+}
+if(valid) guardService=gs;
+// System.out.println("Value of Valid: "+valid);
+break;
+}
+}
+
+// System.out.println("RG Headphone");
+
+if(guardService==null) throw new Exception("Some serious mistake commit by bobby");
+
+guard=new Guard(guardClass,guardService);
+
+}catch(Exception exception)
+{
+System.out.println("Problem in your guard method name");
+}
+}
+else
+{
+guard=null;
+}
+// Guard feature implementation ends for class level ends
+}
+
+
+
+
+private List<Service> processToPopulateNecessaryDS(List<String> list)
 {
 Class c;
 Path path;
@@ -115,17 +457,25 @@ boolean isPostAllowed=false;
 String forwardTo=null;
 int priority;
 Service service=null;
-List<AutoWiredWrapper> autoWiredList=null;
+
+
+
+
+
 Field []props=null;
+
+
 Field property=null;
 Class type=null;
 Parameter []parameter=null;
 List<RequestedParameter> requestedParameterList=null;
-List<RequestedParameterProperty> requestedParameterPropertyList=null;
-Guard guard=null;
+
+
+
+
+
 SecuredAccess securedAccess=null;
-Class guardClass=null;
-Method guardService=null;
+
 
 
 boolean injectApplicationDirectory=false;
@@ -146,48 +496,18 @@ try
 for(String classes: list)
 {
 c=Class.forName(classes);
-
-// analyzing property of framework user starts
-
-props=c.getDeclaredFields();
-autoWiredList=null;
-requestedParameterPropertyList=null;
+// Checking Class that needs to transcipt on JS file at user desired js file starts
+// self refference: Aakash Class pe Path annotation applied ho bhi skta hai or nhi bhi ex: pojo classes pe path annotation applied nhi rhega pr POJOService Classes pr annotation applied rhega
+if(c.isAnnotationPresent(SendPOJOToClient.class) || c.isAnnotationPresent(SendPOJOServiceToClient.class)) processOfClassIntoJSFile(c);
+// Checking Class that needs to transcipt on JS file at user desired js file ends
 
 
-if(props!=null && props.length!=0)
-{
-autoWiredList=new ArrayList<>();
-requestedParameterPropertyList=new ArrayList<>();
+processToEvaluateAutoWiredListAndInjectRequestParameter(c);
 
-for(int i=0;i<props.length;i++)
-{
-if(props[i].isAnnotationPresent(AutoWired.class))
-{
-property=props[i];
-name=props[i].getAnnotation(AutoWired.class).name();
-type=props[i].getType();
-autoWiredList.add(new AutoWiredWrapper(property,name,type));
-}
-else if(props[i].isAnnotationPresent(InjectRequestParameter.class))
-{
-key=props[i].getAnnotation(InjectRequestParameter.class).value();
-if(key==null || key.length()==0) continue; // if user not giving key then why should I kept on my ds
-type=props[i].getType();
-name=props[i].getName();
-requestedParameterPropertyList.add(new RequestedParameterProperty(type,key,name));
-}
-} // loop ends
-
-// Why Should keep empty list in my Service Class object that why I null them 
-if(autoWiredList.size()==0) autoWiredList=null;
-if(requestedParameterPropertyList.size()==0) requestedParameterPropertyList=null;
-
-} // scanning props of Class
-
-// analyzing property of framework user ends
 
 if(c.isAnnotationPresent(Path.class))
 {
+
 path=(Path)c.getAnnotation(Path.class);
 str=path.value();
 if(str.length()==0) continue;
@@ -209,94 +529,7 @@ isPostAllowed=true;
 isGetAllowed=false;
 }
 
-
-// Guard feature implementation starts for class level
-// validation required
-if(c.isAnnotationPresent(SecuredAccess.class))
-{
-
-// later on finalize the project we will break into components  hence following logic is repeating two time, where ?  see on method section
-securedAccess=(SecuredAccess)c.getAnnotation(SecuredAccess.class);
-String guardClassNameWithPackage=securedAccess.checkPost().trim();
-String []tmp=guardClassNameWithPackage.split("[.]"); // validation pending
-String guardClassName=tmp[tmp.length-1];  // validation pending
-
-// System.out.println("With Package: "+guardClassNameWithPackage);
-// System.out.println("Your Guard Class name is: "+guardClassName);
-
-try
-{
-System.out.println("Hi");
-guardClass=Class.forName(guardClassNameWithPackage);
-System.out.println("Bye");
-
-}catch(Exception exception)
-{
-System.out.println("Problem in your guard class name");
-System.out.println("Problem: "+exception.getMessage());
-}
-
-String guardClassService=securedAccess.guard().trim();
-
-System.out.println("Your Guard Class name is: "+guardClassService);
-
-try
-{
-
-for(Method gs: guardClass.getDeclaredMethods())
-{
-System.out.println(1);
-if(guardClassService.equalsIgnoreCase(gs.getName()))
-{
-System.out.println(2);
-Parameter []ps=gs.getParameters();
-boolean valid=true;
-System.out.println(3);
-for(int i=0;i<ps.length;i++)
-{
-System.out.println(4+i);
-if(
-!(
-ps[i].getType().equals(ApplicationDirectory.class) ||
-ps[i].getType().equals(ApplicationScope.class) ||
-ps[i].getType().equals(SessionScope.class) ||
-ps[i].getType().equals(RequestScope.class)
-)
-)
-{
-valid=false;
-break;
-}
-}
-if(valid) guardService=gs;
-System.out.println("Value of Valid: "+valid);
-break;
-}
-}
-
-System.out.println("RG Headphone");
-
-if(guardService==null) throw new Exception("Some serious mistake commit by bobby");
-if(guardService!=null) System.out.println("Colores and beauty");
-
-guard=new Guard(guardClass,guardService);
-
-
-
-}catch(Exception exception)
-{
-System.out.println("Problem un your guard method name");
-}
-}
-else
-{
-guard=null;
-}
-
-// Guard feature implementation ends for class level
-
-
-
+processToEvaluateGuardFeature(c);
 
 
 // method loop starts
@@ -566,13 +799,14 @@ System.out.println("Problem");
 }
 
 
-ServletContext servletContext=servletConfig.getServletContext(); //https://www.javatpoint.com/servletcontext
+// ServletContext servletContext=servletConfig.getServletContext(); //https://www.javatpoint.com/servletcontext
 /*
 self reference:
 when we want applicationlevelContainer in servlet, we have request pointer/refference varaible to extract servletContext a.k.a application level container
 when we want applicationlevelContainer at init method, here we just have servletConfig pointer, so we can extract servletContext a.k.a application level container through servletConfig object
 
 */
+
 servletContext.setAttribute("dataStructure",model);
 System.out.println("HashMap Size is: "+model.dataStructure.size());
 
@@ -582,17 +816,33 @@ return startupList;
 
 public void init(ServletConfig servletConfig) throws ServletException
 {
+
+this.DELETE_PREVIOUSLY_GENERATED_JSFILE=false;
 System.out.println("\n\n\n\t\t\t\t TMWebRockStarter is in action \n\n\n\n");
-String prefix=servletConfig.getInitParameter("SERVICE_PACKAGE_PREFIX");
-System.out.println("["+prefix+"]\n");
+
+PREFIX=servletConfig.getInitParameter("SERVICE_PACKAGE_PREFIX").trim();
+
+System.out.println("["+PREFIX+"]\n");
+
+JSFILENAME=servletConfig.getInitParameter("JSFILE").trim();
+
+if(JSFILENAME==null || JSFILENAME.length()==0) System.out.println("NO JSFILENAME FOUND");
+else System.out.println(JSFILENAME);
+
+servletContext=servletConfig.getServletContext();
 
 /*
 System.getProperty("cataline.base"); // resource from https://stackoverflow.com/questions/48748318/how-to-get-the-path-upto-webapps-folder-of-tomcat-in-servlet#:~:text=1%20Answer&text=String%20webApp%20%3D%20String.,the%20path%20will%20always%20work.
 */
 
-String knownFact=System.getProperty("catalina.base")+File.separator+"webapps"+File.separator+"TMWebRock"+File.separator+"WEB-INF"+File.separator+"classes"+File.separator+prefix;
-List<String> list=findAllClassesName(knownFact,prefix);
-List<Service> startupList=populateNecessaryDS(list,servletConfig);
+String knownFact=System.getProperty("catalina.base")+File.separator+"webapps"+File.separator+"TMWebRock"+File.separator+"WEB-INF"+File.separator+"classes"+File.separator+PREFIX;
+
+List<String> list=processToFindAllClassesName(knownFact);
+
+List<Service> startupList=processToPopulateNecessaryDS(list);
+
 dealingWithStartupServices(startupList);
+
 }
+
 }

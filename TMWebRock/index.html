@@ -6,61 +6,8 @@
 <script src='/jquery/jquery/jquery-3.7.1.min.js'></script>
 <link rel="stylesheet" href="//cdn.datatables.net/2.0.3/css/dataTables.dataTables.min.css">
 <script src="//cdn.datatables.net/2.0.3/js/dataTables.min.js"></script>
-
+<script src='/TMWebRock/jsFile?name=abcd.js'></script> 
 <script>
-class Student
-{
-constructor(rollNumber,name,gender)
-{
-this.rollNumber=rollNumber;
-this.name=name;
-this.gender=gender;
-}
-}
-
-class StudentService
-{
-addStudent(student)
-{
-let promise=new Promise((resolve,reject)=>{
-
-$.ajax({
-url: "/TMWebRock/school/studentService/addStudent",
-type: "POST",
-data: JSON.stringify(student),
-success: resolve,
-error: reject
-});
-});
-return promise;
-}
-
-updateStudent()
-{
-
-}
-deleteStudent()
-{
-
-}
-getByRollNumber()
-{
-
-}
-getAll()
-{
-let promise=new Promise((resolve,reject)=>{
-$.ajax({
-url: "/TMWebRock/school/studentService/getAllStudent",
-success: resolve,
-error: reject
-});
-});
-return promise;
-}
-}
-
-// ------------------------------------------
 function getAllStudent()
 {
 let promise=new StudentService().getAll();
@@ -79,8 +26,6 @@ alert(error);
 });
 }
 
-
-
 function addStudent()
 {
 let name=$("#addName").val();
@@ -93,6 +38,32 @@ promise.then((done)=>{
 alert("Student");
 },(error)=>{
 alert("error");
+});
+}
+
+function updateStudent()
+{
+let rollNumber=$("#updateRollNumber").val();
+let name=$("#updateName").val();
+let gender=$("input[name='updateGender']:checked").val();
+let student=new Student(rollNumber,name,gender);
+let promise=new StudentService().update(student);
+promise.then((data)=>{
+alert('Student updated');
+},(error)=>{
+alert("Student not updated");
+});
+}
+
+function deleteStudent()
+{
+let rollNumber=$("#deleteRollNumber").val();
+alert(rollNumber);
+let promise=new StudentService().delete(rollNumber);
+promise.then((data)=>{
+alert("Student Delete");
+},(error)=>{
+alert("Error");
 });
 }
 </script>
@@ -145,11 +116,8 @@ gender: &emsp;
 <hr>
 <h1>Student Delete Module</h1>
 RollNumber: &emsp; <input type='text' id='deleteRollNumber'> <br> <br>
-<button onclick='updateStudent()'>Next</button>
+<button onclick='deleteStudent()'>Next</button>
 <hr>
-
-
-
 
 
 </body>

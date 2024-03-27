@@ -1,0 +1,215 @@
+
+private String processOfGeneratingPOJOForJS(Class c)
+{
+String buffer="";
+
+buffer=buffer+"class "+c.getSimpleName()+"{\n";
+Field []fields=c.getDeclaredFields();
+if(fields!=null && fields.length!=0)
+{
+// I know POJO Generally contains props. and respective getter and setter I know \n does not effect on js code but still for clearty
+buffer=buffer+"constructor(";
+for(int i=0;i<fields.length;i++)
+{
+buffer=buffer+fields[i].getName();
+if(i+1!=fields.length) buffer=buffer+",";
+}
+buffer=buffer+"){\n";
+for(int i=0;i<fields.length;i++) buffer=buffer+"this."+fields[i].getName()+"="+fields[i].getName()+";\n";
+buffer=buffer+"}\n";
+
+for(int i=0;i<fields.length;i++)
+{
+buffer=buffer+"set"+StringUtility.capitalize(fields[i].getName())+"("+fields[i].getName()+"){\n";
+buffer=buffer+"this."+fields[i].getName()+"="+fields[i].getName()+";\n";
+buffer=buffer+"}\n";
+}
+
+
+}
+
+buffer=buffer+"}\n"; // js class braces
+
+return buffer;
+}
+
+private String processOfGeneratingPOJOServiceForJS(Class c)
+{
+if(c.isAnnotationPresent(Path.class)==false) return ""; // I try independent each module as much as possible
+Path p1=(Path)c.getAnnotation(Path.class);
+String mainServicePath=p1.value().trim();
+if(mainServicePath==null && mainServicePath.length()==0) return "";
+if((mainServicePath.charAt(0)=='/')==false) mainServicePath="/"+mainServicePath;
+
+
+String buffer="";
+buffer=buffer+"class "+c.getSimpleName()+"{\n";
+
+Method []methods=c.getDeclaredMethods();
+
+if(methods!=null && methods.length!=0)
+{
+// POJO Service generally contains the methods which act like API between dl and pl/bl hence I assume it only contains methods and logic which is slightly change for JS POJO Service because it returns promise.
+// validation critera while writing algo.
+// class and method both should have path annoation applied
+String tmpBuffer="";
+String subServicePath="";
+Parameter []parameters=null;
+
+
+for(int i=0;i<methods.length;i++)
+{
+if(methods[i].isAnnotationPresent(Path.class))
+{
+p1=(Path)methods[i].getAnnotation(Path.class);
+subServicePath=p1.value().trim();
+if(subServicePath==null || subServicePath.length()==0) continue;
+if((subServicePath.charAt(0)=='/')==false) subServicePath="/"+subServicePath;
+tmpBuffer=tmpBuffer+methods[i].getName()+"(";
+parameters=methods[i].getParameters();
+
+if(parameters!=null && parameters.length!=0)
+{
+for(int j=0;j<parameters.length;j++)
+{
+buffer=buffer+parameters[i].getName();
+if(j+1!=parameters.length) buffer=buffer+",";
+}
+} // parameter part ends
+tmpBuffer=tmpBuffer+")\n";
+
+
+tmpBuffer=tmpBuffer+"let promise=new Promise((resolve,reject)=>{\n";
+/*
+$.ajax({
+url:
+type:
+
+});
+
+*/
+
+tmpBuffer=tmpBuffer+"});\n";
+tmpBuffer=tmpBuffer+"return promise;\n";
+tmpBuffer=tmpBuffer+"}\n";
+} // validation
+}// loop ends
+buffer=buffer+tmpBuffer;
+} // if ends
+
+buffer=buffer+"}\n";
+
+return buffer;
+}
+
+
+private void processOfClassIntoJSFile(Class c)
+{
+String jsContent;
+String jsPath=servletContext.getRealPath(".")+File.separator+"WEB-INF"+File.separator+"js";
+File file=new File(jsPath);
+if(file.exists()==false)
+{
+if(file.mkdir()==false)
+{
+// Ideally later on I will create Exception then it may be generate exception to server window
+}
+}
+
+
+if(c.isAnnotationPresent(SendPOJOToClient.class))
+{
+jsContent=processOfGeneratingPOJOForJS(c);
+}
+else
+{
+jsContent=processOfGeneratingPOJOServiceForJS(c);
+}
+
+System.out.println("------------------------JS FILE CONTENT ----------------");
+
+System.out.println(jsContent);
+
+System.out.println("------------------------JS FILE CONTENT END----------------");
+
+/*
+later on I will do it at the top of this method
+
+
+String buffer="";
+
+buffer=buffer+"class "+c.getSimpleName()+"{\n";
+Field []fields=c.getDeclaredFields();
+
+if(fields!=null && fields.length!=0)
+{
+buffer=buffer+"constructor(";
+for(int i=0;i<fields.length;i++)
+{
+buffer=buffer+fields[i].getName();
+if(i+1!=fields.length) buffer=buffer+",";
+}
+buffer=buffer+"){\n";
+for(int i=0;i<fields.length;i++) buffer=buffer+"this."+fields[i].getName()+"="+fields[i].getName()+";\n";
+buffer=buffer+"}\n";
+}
+
+System.out.println(buffer);
+
+Method []methods=c.getDeclaredMethods();
+
+if(methods!=null && methods.length!=0)
+{
+
+for(int i=0;i<methods.length;i++)
+{
+buffer=buffer+methods[i].getName();
+Parameter []parameters=methods[i].getParameters();
+if(parameters!=null && parameters.length!=0)
+{
+buffer=buffer+"(";
+for(int j=0;j<parameters.length;j++)
+{
+buffer=buffer+parameters[j].getName();
+if(j+1!=parameters.length) buffer=buffer+",";
+}
+}
+buffer=buffer+"){\n";
+
+buffer=buffer+"let Promise=new Promise((resolve,reject)=>{\n";
+
+buffer=buffer+"Something\n";
+
+buffer=buffer+"});\n";
+buffer=buffer+"return promise;\n";
+
+buffer=buffer+"}\n";
+}
+
+buffer=buffer+"}\n";
+System.out.println(buffer);
+}
+
+
+buffer=buffer+"}\n";
+
+File file=new File(jsPath);
+if(file.exists()==false)
+{
+try
+{
+Process process=Runtime.getRuntime().exec("sudo mkdir "+jsPath);
+process.waitFor();
+System.out.println("Directory created");
+}catch(Exception exception)
+{
+System.out.println(exception);
+}
+}
+
+System.out.println("-----------------------------------------------------");
+
+*/
+
+}
+

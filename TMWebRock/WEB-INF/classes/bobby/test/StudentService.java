@@ -3,7 +3,7 @@ import com.thinking.machines.webrock.annotations.*;
 import java.util.*;
 import java.sql.*;
 
-
+@SendPOJOServiceToClient
 @Path("/studentService")
 public class StudentService
 {
@@ -33,16 +33,57 @@ System.out.println(exception);
 @Path("/updateStudent")
 public void update(Student student)
 {
-
-}
-
-
-@Path("/deleteStudent")
-public void delete(int rollNumber)
+try
 {
-
+Class.forName("com.mysql.cj.jdbc.Driver");
+Connection connection=DriverManager.getConnection("jdbc:mysql://localhost:3306/tmdb","tmdbuser","tmdbuser");
+PreparedStatement preparedStatement=connection.prepareStatement("select * from Student where rollNumber=?");
+preparedStatement.setInt(1,student.getRollNumber());
+ResultSet resultSet=preparedStatement.executeQuery();
+if(resultSet.next()==false)
+{
+System.out.println("RollNumber not Found");
+preparedStatement.close();
+connection.close();
+return;
+}
+preparedStatement=connection.prepareStatement("update Student set name=?,gender=? where rollNumber=?");
+preparedStatement.setString(1,student.getName());
+preparedStatement.setString(2,student.getGender().trim());
+preparedStatement.setInt(3,student.getRollNumber());
+preparedStatement.executeUpdate();
+preparedStatement.close();
+connection.close();
+}catch(Exception exception)
+{
+System.out.println("Bobby Side");
+System.out.println(exception);
+}
 }
 
+
+@GET
+@Path("/deleteStudent")
+public void delete(@RequestParameter("rollNumber") int rollNumber)
+{
+try
+{
+Class.forName("com.mysql.cj.jdbc.Driver");
+Connection connection=DriverManager.getConnection("jdbc:mysql://localhost:3306/tmdb","tmdbuser","tmdbuser");
+// Ideally I have to check existenece of rollNumber
+PreparedStatement preparedStatement=connection.prepareStatement("delete from Student where rollNumber=?");
+preparedStatement.setInt(1,rollNumber);
+preparedStatement.executeUpdate();
+preparedStatement.close();
+connection.close();
+}catch(Exception exception)
+{
+System.out.println("Bobby Side");
+System.out.println(exception);
+}
+}
+
+@GET
 @Path("/getByRollNumber")
 public Student getByRollNumber(int rollNumber)
 {
